@@ -1,23 +1,16 @@
-import { FormProvider, useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { FormProvider, type UseFormReturn } from "react-hook-form"
 import { motion } from "framer-motion"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StudentInformationForm } from "@/features/calculator/components/StudentInformationForm"
 import { StudentPhotoPlaceholder } from "@/features/calculator/components/StudentPhotoPlaceholder"
-import { EMPTY_STUDENT_INFORMATION } from "@/features/calculator/types"
-import {
-  studentInformationSchema,
-  type StudentInformationFormValues,
-} from "@/features/calculator/utils/validation"
+import type { StudentInformationFormValues } from "@/features/calculator/utils/validation"
 
-export function StudentInformationCard() {
-  const form = useForm<StudentInformationFormValues>({
-    resolver: zodResolver(studentInformationSchema),
-    defaultValues: EMPTY_STUDENT_INFORMATION,
-    mode: "onChange",
-  })
+interface StudentInformationCardProps {
+  form: UseFormReturn<StudentInformationFormValues>
+}
 
+export function StudentInformationCard({ form }: StudentInformationCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}

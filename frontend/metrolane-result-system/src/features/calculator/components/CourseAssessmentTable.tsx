@@ -40,7 +40,10 @@ export function CourseAssessmentTable({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle>Course Assessment Register</CardTitle>
-          <AddCourseButton onSelectCourse={onAddCourse} />
+          <AddCourseButton
+            onSelectCourse={onAddCourse}
+            addedCourseCodes={courses.map((course) => course.courseCode).filter(Boolean)}
+          />
         </CardHeader>
         <CardContent>
           {courses.length === 0 ? (

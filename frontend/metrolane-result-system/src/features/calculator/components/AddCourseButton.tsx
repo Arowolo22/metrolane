@@ -11,10 +11,18 @@ import { COURSE_LIBRARY, type CourseTemplate } from "@/features/calculator/data/
 
 interface AddCourseButtonProps {
   onSelectCourse: (course: CourseTemplate) => void
+  addedCourseCodes?: string[]
 }
 
-export function AddCourseButton({ onSelectCourse }: AddCourseButtonProps) {
+export function AddCourseButton({
+  onSelectCourse,
+  addedCourseCodes = [],
+}: AddCourseButtonProps) {
   const [open, setOpen] = useState(false)
+
+  const availableCourses = COURSE_LIBRARY.filter(
+    (course) => !addedCourseCodes.includes(course.code),
+  )
 
   return (
     <Select 
@@ -36,14 +44,22 @@ export function AddCourseButton({ onSelectCourse }: AddCourseButtonProps) {
         Add Course
       </SelectTrigger>
       <SelectContent align="end" className="max-h-[300px] w-[350px]">
-        {COURSE_LIBRARY.map((course) => (
-          <SelectItem key={course.code} value={course.code}>
-            <div className="flex flex-col items-start py-1">
-              <span className="text-sm font-bold text-gray-900">{course.code}</span>
-              <span className="text-xs text-gray-500">{course.title}</span>
-            </div>
-          </SelectItem>
-        ))}
+        {availableCourses.length === 0 ? (
+          <div className="px-3 py-6 text-center text-sm text-gray-500">
+            All available courses have been added.
+          </div>
+        ) : (
+          availableCourses.map((course) => (
+            <SelectItem key={course.code} value={course.code}>
+              <div className="flex flex-col items-start py-1">
+                <span className="text-sm font-bold text-gray-900">
+                  {course.code}
+                </span>
+                <span className="text-xs text-gray-500">{course.title}</span>
+              </div>
+            </SelectItem>
+          ))
+        )}
       </SelectContent>
     </Select>
   )

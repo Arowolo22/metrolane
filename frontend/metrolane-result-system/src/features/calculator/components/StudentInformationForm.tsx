@@ -11,6 +11,20 @@ import {
 } from "@/components/ui/select"
 import type { StudentInformationFormValues } from "@/features/calculator/utils/validation"
 
+const facultyOptions = [
+  "Faculty of Health Sciences",
+  "Faculty of Medical Laboratory Science",
+  "Faculty of Public Health",
+] as const
+
+const departmentOptions = [
+  "Community Health",
+  "Medical Laboratory Science",
+  "Health Information Management",
+  "Public Health",
+  "Environmental Health",
+] as const
+
 const programmeOptions = [
   "Community Health",
   "Medical Laboratory Science",
@@ -31,6 +45,8 @@ export function StudentInformationForm() {
     formState: { errors },
   } = useFormContext<StudentInformationFormValues>()
 
+  const faculty = watch("faculty")
+  const department = watch("department")
   const programme = watch("programme")
   const level = watch("level")
   const semester = watch("semester")
@@ -58,6 +74,68 @@ export function StudentInformationForm() {
         />
         {errors.matricNumber && (
           <p className="text-xs text-red-500">{errors.matricNumber.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="academicSession">Academic Session</Label>
+        <Input
+          id="academicSession"
+          placeholder="e.g. 2023/2024"
+          {...register("academicSession")}
+        />
+        {errors.academicSession && (
+          <p className="text-xs text-red-500">
+            {errors.academicSession.message}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="faculty">Faculty</Label>
+        <Select
+          value={faculty || undefined}
+          onValueChange={(value) =>
+            setValue("faculty", value, { shouldValidate: true })
+          }
+        >
+          <SelectTrigger id="faculty">
+            <SelectValue placeholder="Select faculty" />
+          </SelectTrigger>
+          <SelectContent>
+            {facultyOptions.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.faculty && (
+          <p className="text-xs text-red-500">{errors.faculty.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="department">Department</Label>
+        <Select
+          value={department || undefined}
+          onValueChange={(value) =>
+            setValue("department", value, { shouldValidate: true })
+          }
+        >
+          <SelectTrigger id="department">
+            <SelectValue placeholder="Select department" />
+          </SelectTrigger>
+          <SelectContent>
+            {departmentOptions.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.department && (
+          <p className="text-xs text-red-500">{errors.department.message}</p>
         )}
       </div>
 

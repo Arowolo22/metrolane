@@ -1,0 +1,65 @@
+import { z } from "zod"
+
+const emailSchema = z
+  .string()
+  .min(1, "Email address is required")
+  .email("Enter a valid email address")
+
+export const passwordRulesSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[a-z]/, "Include at least one lowercase letter")
+  .regex(/[A-Z]/, "Include at least one uppercase letter")
+  .regex(/[0-9]/, "Include at least one number")
+  .regex(/[^A-Za-z0-9]/, "Include at least one special character")
+
+export const loginSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, "Password is required"),
+  rememberMe: z.boolean(),
+})
+
+export type LoginFormValues = z.infer<typeof loginSchema>
+
+export const registerSchema = z
+  .object({
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    department: z.string().min(1, "Department is required"),
+    email: emailSchema,
+    phone: z
+      .string()
+      .min(1, "Phone number is required")
+      .regex(/^[\d\s+()-]{10,}$/, "Enter a valid phone number"),
+    password: passwordRulesSchema,
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+    acceptTerms: z
+      .boolean()
+      .refine((value) => value === true, {
+        message: "You must accept the terms and conditions",
+      }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  })
+
+export type RegisterFormValues = z.infer<typeof registerSchema>
+
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+})
+
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>
+
+export const resetPasswordSchema = z
+  .object({
+    password: passwordRulesSchema,
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  })
+
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>

@@ -1,13 +1,19 @@
-import { FileText } from "lucide-react"
+import { FileText, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
 
 interface GenerateResultButtonProps {
-  disabled: boolean
+  disabled?: boolean
+  isLoading?: boolean
+  onGenerate: () => void
 }
 
-export function GenerateResultButton({ disabled }: GenerateResultButtonProps) {
+export function GenerateResultButton({
+  disabled = false,
+  isLoading = false,
+  onGenerate,
+}: GenerateResultButtonProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -17,11 +23,16 @@ export function GenerateResultButton({ disabled }: GenerateResultButtonProps) {
     >
       <Button
         size="lg"
-        disabled={disabled}
+        disabled={disabled || isLoading}
+        onClick={onGenerate}
         className="min-w-[200px] shadow-md"
       >
-        <FileText className="h-5 w-5" />
-        Generate Result
+        {isLoading ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : (
+          <FileText className="h-5 w-5" />
+        )}
+        {isLoading ? "Generating..." : "Generate Result"}
       </Button>
     </motion.div>
   )

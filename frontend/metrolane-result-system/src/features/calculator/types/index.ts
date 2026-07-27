@@ -1,9 +1,12 @@
 export interface StudentInformation {
   studentName: string
   matricNumber: string
+  faculty: string
+  department: string
   programme: string
   level: string
   semester: string
+  academicSession: string
 }
 
 export interface CourseRecord {
@@ -21,9 +24,12 @@ export type CourseRecordInput = Omit<CourseRecord, "id" | "isEditing">
 export const EMPTY_STUDENT_INFORMATION: StudentInformation = {
   studentName: "",
   matricNumber: "",
+  faculty: "",
+  department: "",
   programme: "",
   level: "",
   semester: "",
+  academicSession: "",
 }
 
 export const createEmptyCourse = (): CourseRecord => ({

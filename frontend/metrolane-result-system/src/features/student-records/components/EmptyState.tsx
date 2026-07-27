@@ -29,7 +29,7 @@ export function EmptyState() {
       </p>
       
       <Button asChild size="lg" className="bg-orange-600 hover:bg-orange-700 shadow-md">
-        <Link to="/">
+        <Link to="/calculator">
           <Calculator className="mr-2 h-5 w-5" />
           Go to Calculator
         </Link>

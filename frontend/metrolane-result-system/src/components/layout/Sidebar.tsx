@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
 const mainNavItems = [
-  { to: "/", label: "Calculator", icon: Calculator, end: true },
+  { to: "/calculator", label: "Calculator", icon: Calculator, end: true },
   { to: "/student-records", label: "Student Records", icon: Users },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const
@@ -58,7 +58,7 @@ function NavItem({
 
 export function Sidebar() {
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-gray-200 bg-white lg:flex">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-gray-200 bg-white lg:flex">
       <div className="flex items-center gap-3 border-b border-gray-200 px-5 py-6">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500 text-white shadow-sm">
           <GraduationCap className="h-5 w-5" />
@@ -73,7 +73,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex flex-1 flex-col justify-between px-3 py-6">
+      <nav className="flex flex-1 flex-col justify-between overflow-y-auto px-3 py-6">
         <div className="space-y-1">
           {mainNavItems.map((item) => (
             <NavItem key={item.to} {...item} />

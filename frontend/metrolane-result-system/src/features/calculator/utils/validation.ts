@@ -3,9 +3,12 @@ import { z } from "zod"
 export const studentInformationSchema = z.object({
   studentName: z.string().min(1, "Student name is required"),
   matricNumber: z.string().min(1, "Matric number is required"),
+  faculty: z.string().min(1, "Faculty is required"),
+  department: z.string().min(1, "Department is required"),
   programme: z.string().min(1, "Programme is required"),
   level: z.string().min(1, "Level is required"),
   semester: z.string().min(1, "Semester is required"),
+  academicSession: z.string().min(1, "Academic session is required"),
 })
 
 export type StudentInformationFormValues = z.infer<
