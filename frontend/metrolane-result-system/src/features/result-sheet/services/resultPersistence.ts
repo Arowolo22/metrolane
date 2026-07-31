@@ -1,9 +1,32 @@
 import type { SaveResultRecordPayload } from "@/features/result-sheet/types"
+import { apiClient, getApiErrorMessage, type ApiEnvelope } from "@/lib/api"
+
+export type SavedResultResponse = {
+  id: string
+  summary: {
+    semesterGpa: number
+    cumulativeGpa: number | null
+    degreeClassification: string
+    academicStanding: string
+  }
+}
 
 export async function persistGeneratedResult(
-  _payload: SaveResultRecordPayload,
-): Promise<void> {
-  // Reserved for future backend integration:
-  // POST /api/results, create student record, update CGPA, etc.
-  return Promise.resolve()
+  payload: SaveResultRecordPayload,
+): Promise<SavedResultResponse> {
+  try {
+    const { data } = await apiClient.post<
+      ApiEnvelope<SavedResultResponse>
+    >("/results", payload)
+
+    if (!data.success || !data.data) {
+      throw new Error(data.message ?? "Failed to save result")
+    }
+
+    return data.data
+  } catch (error) {
+    throw new Error(
+      getApiErrorMessage(error, "Failed to save result to the server."),
+    )
+  }
 }

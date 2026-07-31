@@ -20,12 +20,29 @@ export type ForgotPasswordPayload = {
 }
 
 export type ResetPasswordPayload = {
+  token: string
   password: string
   confirmPassword: string
 }
 
-/** Placeholder for future API responses */
+export type AuthUser = {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  department: string
+  phone: string
+  role: string
+}
+
+export type AuthSession = {
+  user: AuthUser
+  accessToken: string
+  refreshToken?: string
+}
+
 export type AuthResult = {
   success: boolean
   message?: string
+  user?: AuthUser
 }

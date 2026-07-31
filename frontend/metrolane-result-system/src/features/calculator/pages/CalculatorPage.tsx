@@ -16,6 +16,7 @@ import {
   type StudentInformationFormValues,
 } from "@/features/calculator/utils/validation"
 import { useResultGenerator } from "@/features/result-sheet/hooks/useResultGenerator"
+import { persistGeneratedResult } from "@/features/result-sheet/services/resultPersistence"
 
 export function CalculatorPage() {
   const studentForm = useForm<StudentInformationFormValues>({
@@ -33,7 +34,9 @@ export function CalculatorPage() {
     toggleEdit,
   } = useCourseRegister()
 
-  const { generateResult, isGenerating, validationErrors } = useResultGenerator()
+  const { generateResult, isGenerating, validationErrors } = useResultGenerator({
+    onPersist: persistGeneratedResult,
+  })
 
   const handleGenerateResult = async () => {
     await generateResult(studentForm.getValues(), courses)

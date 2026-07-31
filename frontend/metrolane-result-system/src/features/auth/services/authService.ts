@@ -1,54 +1,153 @@
 import type {
   AuthResult,
+  AuthSession,
+  AuthUser,
   ForgotPasswordPayload,
   LoginCredentials,
   RegisterPayload,
   ResetPasswordPayload,
 } from "@/features/auth/types"
+import {
+  apiClient,
+  clearAuthTokens,
+  getApiErrorMessage,
+  setAuthTokens,
+  type ApiEnvelope,
+} from "@/lib/api"
 
-const SIMULATED_DELAY_MS = 900
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, ms)
-  })
-}
-
-/**
- * Frontend-only placeholders. Replace with real API calls when the backend is ready.
- */
 export async function loginRequest(
   credentials: LoginCredentials,
 ): Promise<AuthResult> {
-  await delay(SIMULATED_DELAY_MS)
+  try {
+    const { data } = await apiClient.post<
+      ApiEnvelope<AuthSession>
+    >("/auth/login", credentials)
 
-  if (credentials.rememberMe) {
-    // Placeholder for persistent session preference — wire to backend / secure storage later.
-    sessionStorage.setItem("metrolane.auth.rememberMe", "true")
-  } else {
-    sessionStorage.removeItem("metrolane.auth.rememberMe")
+    if (!data.success || !data.data) {
+      return { success: false, message: data.message ?? "Unable to sign in." }
+    }
+
+    setAuthTokens(data.data.accessToken, data.data.refreshToken)
+
+    if (credentials.rememberMe) {
+      sessionStorage.setItem("metrolane.auth.rememberMe", "true")
+    } else {
+      sessionStorage.removeItem("metrolane.auth.rememberMe")
+    }
+
+    return { success: true, user: data.data.user }
+  } catch (error) {
+    return {
+      success: false,
+      message: getApiErrorMessage(error, "Unable to sign in. Please try again."),
+    }
   }
-
-  return { success: true }
 }
 
 export async function registerRequest(
-  _payload: RegisterPayload,
+  payload: RegisterPayload,
 ): Promise<AuthResult> {
-  await delay(SIMULATED_DELAY_MS)
-  return { success: true, message: "Account created successfully." }
+  try {
+    const { data } = await apiClient.post<ApiEnvelope<AuthUser>>(
+      "/auth/register",
+      payload,
+    )
+
+    if (!data.success) {
+      return {
+        success: false,
+        message: data.message ?? "Unable to create account.",
+      }
+    }
+
+    return {
+      success: true,
+      message: data.message ?? "Account created successfully.",
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: getApiErrorMessage(
+        error,
+        "Unable to create account. Please try again.",
+      ),
+    }
+  }
 }
 
 export async function forgotPasswordRequest(
-  _payload: ForgotPasswordPayload,
+  payload: ForgotPasswordPayload,
 ): Promise<AuthResult> {
-  await delay(SIMULATED_DELAY_MS)
-  return { success: true }
+  try {
+    const { data } = await apiClient.post<ApiEnvelope<unknown>>(
+      "/auth/forgot-password",
+      payload,
+    )
+
+    if (!data.success) {
+      return {
+        success: false,
+        message: data.message ?? "Unable to send reset link.",
+      }
+    }
+
+    return { success: true, message: data.message }
+  } catch (error) {
+    return {
+      success: false,
+      message: getApiErrorMessage(
+        error,
+        "Unable to send reset link. Please try again.",
+      ),
+    }
+  }
 }
 
 export async function resetPasswordRequest(
-  _payload: ResetPasswordPayload,
+  payload: ResetPasswordPayload,
 ): Promise<AuthResult> {
-  await delay(SIMULATED_DELAY_MS)
-  return { success: true, message: "Password updated successfully." }
+  try {
+    const { data } = await apiClient.post<ApiEnvelope<null>>(
+      "/auth/reset-password",
+      payload,
+    )
+
+    if (!data.success) {
+      return {
+        success: false,
+        message: data.message ?? "Unable to reset password.",
+      }
+    }
+
+    return {
+      success: true,
+      message: data.message ?? "Password updated successfully.",
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: getApiErrorMessage(
+        error,
+        "Unable to reset password. Please try again.",
+      ),
+    }
+  }
+}
+
+export async function logoutRequest(): Promise<void> {
+  const refreshToken = localStorage.getItem("metrolane.auth.refreshToken")
+  try {
+    await apiClient.post("/auth/logout", { refreshToken })
+  } finally {
+    clearAuthTokens()
+  }
+}
+
+export async function fetchCurrentUser(): Promise<AuthUser | null> {
+  try {
+    const { data } = await apiClient.get<ApiEnvelope<AuthUser>>("/auth/me")
+    return data.success && data.data ? data.data : null
+  } catch {
+    return null
+  }
 }

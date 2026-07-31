@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { CheckCircle2, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { motion } from "framer-motion"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -18,6 +18,8 @@ import {
 
 export function ResetPasswordForm() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const resetToken = searchParams.get("token") ?? ""
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [completed, setCompleted] = useState(false)
 
@@ -48,8 +50,15 @@ export function ResetPasswordForm() {
 
   async function onSubmit(values: ResetPasswordFormValues) {
     setSubmitError(null)
+    if (!resetToken) {
+      setSubmitError("Reset link is invalid or expired. Request a new link.")
+      return
+    }
     try {
-      const result = await resetPasswordRequest(values)
+      const result = await resetPasswordRequest({
+        ...values,
+        token: resetToken,
+      })
       if (!result.success) {
         setSubmitError(
           result.message ?? "Unable to reset password. Please try again.",
