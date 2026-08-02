@@ -1,62 +1,48 @@
-import { cloudinary, isCloudinaryConfigured } from "../config/cloudinary.js"
+import { supabaseAdmin } from "../config/supabase.js"
 import { AppError } from "../middleware/errorHandler.js"
+
+const STUDENT_PHOTOS_BUCKET = "student-photos"
+const RESULT_PDFS_BUCKET = "result-pdfs"
+
+function extensionFromMimeType(mimeType: string): string {
+  const subtype = mimeType.split("/")[1]?.split("+")[0]
+  return subtype && /^[a-z0-9]+$/i.test(subtype) ? subtype : "jpg"
+}
 
 export async function uploadStudentPhoto(
   buffer: Buffer,
   matricNumber: string,
+  mimeType: string,
 ): Promise<string> {
-  if (!isCloudinaryConfigured()) {
-    throw new AppError("Cloudinary is not configured", 503)
+  const extension = extensionFromMimeType(mimeType)
+  const path = `${matricNumber.replace(/\s+/g, "_")}_${Date.now()}.${extension}`
+
+  const { error } = await supabaseAdmin.storage
+    .from(STUDENT_PHOTOS_BUCKET)
+    .upload(path, buffer, { contentType: mimeType, upsert: true })
+
+  if (error) {
+    throw new AppError(`Failed to upload photo: ${error.message}`, 500)
   }
 
-  const publicId = `metrolane/students/${matricNumber.replace(/\s+/g, "_")}_${Date.now()}`
-
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: "metrolane/students",
-        public_id: publicId,
-        resource_type: "image",
-        overwrite: true,
-      },
-      (error, result) => {
-        if (error || !result) {
-          reject(new AppError("Failed to upload photo", 500))
-          return
-        }
-        resolve(result.secure_url)
-      },
-    )
-    stream.end(buffer)
-  })
+  const { data } = supabaseAdmin.storage.from(STUDENT_PHOTOS_BUCKET).getPublicUrl(path)
+  return data.publicUrl
 }
 
 export async function uploadResultPdf(
   buffer: Buffer,
   filename: string,
 ): Promise<string> {
-  if (!isCloudinaryConfigured()) {
-    throw new AppError("Cloudinary is not configured", 503)
+  const path = `${filename.replace(/\.pdf$/i, "")}.pdf`
+
+  const { error } = await supabaseAdmin.storage
+    .from(RESULT_PDFS_BUCKET)
+    .upload(path, buffer, { contentType: "application/pdf", upsert: true })
+
+  if (error) {
+    throw new AppError(`Failed to upload PDF: ${error.message}`, 500)
   }
 
-  const publicId = `metrolane/results/${filename.replace(/\.pdf$/i, "")}`
-
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: "metrolane/results",
-        public_id: publicId,
-        resource_type: "raw",
-        format: "pdf",
-      },
-      (error, result) => {
-        if (error || !result) {
-          reject(new AppError("Failed to upload PDF", 500))
-          return
-        }
-        resolve(result.secure_url)
-      },
-    )
-    stream.end(buffer)
-  })
+  const { data } = supabaseAdmin.storage.from(RESULT_PDFS_BUCKET).getPublicUrl(path)
+  return data.publicUrl
 }

@@ -42,7 +42,7 @@ export function useResultGenerator(options: UseResultGeneratorOptions = {}) {
         const summary = buildResultSummary(savedCourses)
         const generatedAt = new Date()
 
-        const { blob, filename } = generateResultPdf({
+        const { blob, filename } = await generateResultPdf({
           student,
           courses: savedCourses,
           summary,

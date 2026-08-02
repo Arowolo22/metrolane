@@ -7,6 +7,7 @@ export interface StudentInformation {
   level: string
   semester: string
   academicSession: string
+  photoUrl?: string
 }
 
 export interface CourseRecord {
@@ -30,6 +31,7 @@ export const EMPTY_STUDENT_INFORMATION: StudentInformation = {
   level: "",
   semester: "",
   academicSession: "",
+  photoUrl: undefined,
 }
 
 export const createEmptyCourse = (): CourseRecord => ({

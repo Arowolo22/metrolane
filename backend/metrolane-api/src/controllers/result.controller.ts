@@ -1,8 +1,8 @@
 import type { Response, NextFunction } from "express"
-import { Types } from "mongoose"
 
 import type { AuthenticatedRequest } from "../middleware/auth.js"
 import {
+  attachResultPdf,
   createResult,
   formatResultDetail,
   formatStudentRecordListItem,
@@ -29,14 +29,14 @@ export async function createResultHandler(
 ): Promise<void> {
   try {
     const body = createResultSchema.parse(req.body)
-    const result = await createResult(body, new Types.ObjectId(req.user!.userId))
+    const result = await createResult(body, req.user!.userId)
 
     if (body.pdfBase64) {
       try {
         const pdfBuffer = Buffer.from(body.pdfBase64, "base64")
         const pdfUrl = await uploadResultPdf(pdfBuffer, body.filename)
+        await attachResultPdf(result.id, pdfUrl)
         result.pdfUrl = pdfUrl
-        await result.save()
       } catch (uploadError) {
         console.warn("PDF upload skipped:", uploadError)
       }
@@ -70,14 +70,7 @@ export async function listStudentRecordsHandler(
     const query = studentRecordsQuerySchema.parse(req.query)
     const records = await listStudentRecords(query)
 
-    const detailed = await Promise.all(
-      records.map(async (record) => {
-        const full = await getResultById(record.id)
-        return formatStudentRecordListItem(full)
-      }),
-    )
-
-    res.json(ok(detailed))
+    res.json(ok(records.map(formatStudentRecordListItem)))
   } catch (error) {
     next(error)
   }

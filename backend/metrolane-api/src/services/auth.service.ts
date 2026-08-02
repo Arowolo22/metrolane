@@ -1,7 +1,17 @@
 import { getCache } from "../config/redis.js"
 import { env } from "../config/env.js"
-import { User, hashPassword } from "../models/User.js"
+import {
+  createUser,
+  findUserByEmail,
+  findUserById,
+  hashPassword,
+  updateUserPasswordHash,
+  verifyPassword,
+  type IUser,
+  type UserRole,
+} from "../models/User.js"
 import { AppError } from "../middleware/errorHandler.js"
+import { hasMetrolanePepper } from "../utils/adminPassword.js"
 import {
   generateResetToken,
   signAccessToken,
@@ -28,17 +38,9 @@ export type LoginResponse = {
   refreshToken?: string
 }
 
-function toAuthUser(user: {
-  _id: { toString(): string }
-  firstName: string
-  lastName: string
-  email: string
-  department: string
-  phone: string
-  role: string
-}): AuthUserResponse {
+function toAuthUser(user: IUser): AuthUserResponse {
   return {
-    id: user._id.toString(),
+    id: user.id,
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
@@ -55,16 +57,23 @@ export async function registerUser(input: {
   email: string
   phone: string
   password: string
+  role?: UserRole
 }): Promise<AuthUserResponse> {
-  const existing = await User.findOne({ email: input.email.toLowerCase() })
+  const existing = await findUserByEmail(input.email)
   if (existing) {
     throw new AppError("An account with this email already exists", 409)
   }
 
+  if (input.role === "admin" && !hasMetrolanePepper(input.password)) {
+    throw new AppError(
+      'Administrator passwords must include "metrolane" plus at least one additional letter',
+      400,
+    )
+  }
+
   const passwordHash = await hashPassword(input.password)
-  const user = await User.create({
+  const user = await createUser({
     ...input,
-    email: input.email.toLowerCase(),
     passwordHash,
   })
 
@@ -76,11 +85,9 @@ export async function loginUser(input: {
   password: string
   rememberMe: boolean
 }): Promise<LoginResponse> {
-  const user = await User.findOne({ email: input.email.toLowerCase() }).select(
-    "+passwordHash",
-  )
+  const user = await findUserByEmail(input.email)
 
-  if (!user || !(await user.comparePassword(input.password))) {
+  if (!user || !(await verifyPassword(user.passwordHash, input.password))) {
     throw new AppError("Invalid email or password", 401)
   }
 
@@ -88,7 +95,7 @@ export async function loginUser(input: {
     throw new AppError("Your account has been deactivated", 403)
   }
 
-  const payload = { userId: user._id.toString(), email: user.email }
+  const payload = { userId: user.id, email: user.email }
   const accessToken = signAccessToken(payload)
   const response: LoginResponse = {
     user: toAuthUser(user),
@@ -100,7 +107,7 @@ export async function loginUser(input: {
     const cache = getCache()
     await cache.set(
       `${REFRESH_PREFIX}${refreshToken}`,
-      user._id.toString(),
+      user.id,
       "EX",
       env.REFRESH_TOKEN_EXPIRES_IN_DAYS * 24 * 60 * 60,
     )
@@ -111,7 +118,7 @@ export async function loginUser(input: {
 }
 
 export async function getUserById(userId: string): Promise<AuthUserResponse> {
-  const user = await User.findById(userId)
+  const user = await findUserById(userId)
   if (!user) {
     throw new AppError("User not found", 404)
   }
@@ -143,19 +150,19 @@ export async function refreshSession(refreshToken: string): Promise<LoginRespons
     throw new AppError("Invalid refresh token", 401)
   }
 
-  const user = await User.findById(storedUserId)
+  const user = await findUserById(storedUserId)
   if (!user || !user.isActive) {
     throw new AppError("User not found", 404)
   }
 
-  const newPayload = { userId: user._id.toString(), email: user.email }
+  const newPayload = { userId: user.id, email: user.email }
   const accessToken = signAccessToken(newPayload)
   const newRefreshToken = signRefreshToken(newPayload)
 
   await cache.del(`${REFRESH_PREFIX}${refreshToken}`)
   await cache.set(
     `${REFRESH_PREFIX}${newRefreshToken}`,
-    user._id.toString(),
+    user.id,
     "EX",
     env.REFRESH_TOKEN_EXPIRES_IN_DAYS * 24 * 60 * 60,
   )
@@ -168,7 +175,7 @@ export async function refreshSession(refreshToken: string): Promise<LoginRespons
 }
 
 export async function requestPasswordReset(email: string): Promise<{ resetLink?: string }> {
-  const user = await User.findOne({ email: email.toLowerCase() })
+  const user = await findUserByEmail(email)
   if (!user) {
     // Do not reveal whether email exists
     return {}
@@ -178,7 +185,7 @@ export async function requestPasswordReset(email: string): Promise<{ resetLink?:
   const cache = getCache()
   await cache.set(
     `${RESET_PREFIX}${token}`,
-    user._id.toString(),
+    user.id,
     "EX",
     env.PASSWORD_RESET_EXPIRES_MINUTES * 60,
   )
@@ -202,12 +209,19 @@ export async function resetPassword(input: {
     throw new AppError("Invalid or expired reset token", 400)
   }
 
-  const user = await User.findById(userId).select("+passwordHash")
+  const user = await findUserById(userId)
   if (!user) {
     throw new AppError("User not found", 404)
   }
 
-  user.passwordHash = await hashPassword(input.password)
-  await user.save()
+  if (user.role === "admin" && !hasMetrolanePepper(input.password)) {
+    throw new AppError(
+      'Administrator passwords must include "metrolane" plus at least one additional letter',
+      400,
+    )
+  }
+
+  const passwordHash = await hashPassword(input.password)
+  await updateUserPasswordHash(user.id, passwordHash)
   await cache.del(`${RESET_PREFIX}${input.token}`)
 }

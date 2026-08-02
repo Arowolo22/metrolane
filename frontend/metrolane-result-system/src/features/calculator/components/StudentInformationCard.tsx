@@ -3,7 +3,7 @@ import { motion } from "framer-motion"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StudentInformationForm } from "@/features/calculator/components/StudentInformationForm"
-import { StudentPhotoPlaceholder } from "@/features/calculator/components/StudentPhotoPlaceholder"
+import { StudentPhotoUpload } from "@/features/calculator/components/StudentPhotoUpload"
 import type { StudentInformationFormValues } from "@/features/calculator/utils/validation"
 
 interface StudentInformationCardProps {
@@ -24,7 +24,7 @@ export function StudentInformationCard({ form }: StudentInformationCardProps) {
         <CardContent>
           <FormProvider {...form}>
             <div className="flex flex-col gap-6 lg:flex-row">
-              <StudentPhotoPlaceholder />
+              <StudentPhotoUpload />
               <StudentInformationForm />
             </div>
           </FormProvider>

@@ -53,12 +53,28 @@ function drawSectionTitle(doc: jsPDF, title: string, y: number): number {
   return y + 8
 }
 
-export function generateResultPdf({
+async function loadImageAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) return null
+    const blob = await response.blob()
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return null
+  }
+}
+
+export async function generateResultPdf({
   student,
   courses,
   summary,
   generatedAt = new Date(),
-}: GeneratePdfOptions): { blob: Blob; filename: string } {
+}: GeneratePdfOptions): Promise<{ blob: Blob; filename: string }> {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
   const generatedDate = formatDisplayDate(generatedAt)
 
@@ -76,7 +92,12 @@ export function generateResultPdf({
   doc.text("Official Semester Result", 40, 31)
   doc.text("Academic Records Unit", 40, 36)
 
-  drawPlaceholderBox(doc, 164, 12, 32, 32, "Passport Photo")
+  const photoDataUrl = student.photoUrl ? await loadImageAsDataUrl(student.photoUrl) : null
+  if (photoDataUrl) {
+    doc.addImage(photoDataUrl, 164, 12, 32, 32)
+  } else {
+    drawPlaceholderBox(doc, 164, 12, 32, 32, "Passport Photo")
+  }
 
   let cursorY = 52
 

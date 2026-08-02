@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PasswordInput } from "@/features/auth/components/PasswordInput"
+import { useAuth } from "@/features/auth/context/useAuth"
 import { loginRequest } from "@/features/auth/services/authService"
 import {
   loginSchema,
@@ -22,6 +23,7 @@ type LoginFormProps = {
 
 export function LoginForm({ successMessage }: LoginFormProps) {
   const navigate = useNavigate()
+  const { refreshUser } = useAuth()
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const {
@@ -45,6 +47,7 @@ export function LoginForm({ successMessage }: LoginFormProps) {
         setSubmitError(result.message ?? "Unable to sign in. Please try again.")
         return
       }
+      await refreshUser()
       navigate("/calculator", { replace: true })
     } catch {
       setSubmitError("Something went wrong. Please try again.")

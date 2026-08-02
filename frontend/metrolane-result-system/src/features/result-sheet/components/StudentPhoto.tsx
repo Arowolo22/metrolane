@@ -1,6 +1,20 @@
 import { User } from "lucide-react"
 
-export function StudentPhoto() {
+interface StudentPhotoProps {
+  photoUrl?: string
+}
+
+export function StudentPhoto({ photoUrl }: StudentPhotoProps) {
+  if (photoUrl) {
+    return (
+      <img
+        src={photoUrl}
+        alt="Student passport"
+        className="h-28 w-24 shrink-0 rounded-lg border-2 border-gray-300 object-cover"
+      />
+    )
+  }
+
   return (
     <div className="flex h-28 w-24 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-gray-300 bg-gray-50">
       <User className="h-10 w-10 text-gray-300" strokeWidth={1.5} />

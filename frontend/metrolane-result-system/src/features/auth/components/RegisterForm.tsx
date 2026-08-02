@@ -56,11 +56,14 @@ export function RegisterForm() {
       password: "",
       confirmPassword: "",
       acceptTerms: false,
+      role: "lecturer",
     },
   })
 
   const password = watch("password")
   const department = watch("department")
+  const role = watch("role")
+  const isAdmin = role === "admin"
 
   async function onSubmit(values: RegisterFormValues) {
     setSubmitError(null)
@@ -186,6 +189,25 @@ export function RegisterForm() {
       </div>
 
       <div className="space-y-2">
+        <label className="flex cursor-pointer items-start gap-2 text-sm text-gray-600">
+          <Checkbox
+            id="isAdmin"
+            className="mt-0.5"
+            checked={isAdmin}
+            onCheckedChange={(checked) =>
+              setValue("role", checked === true ? "admin" : "lecturer", {
+                shouldValidate: true,
+              })
+            }
+          />
+          <span>
+            Register as a <span className="font-medium text-gray-800">System Administrator</span>{" "}
+            instead of a lecturer.
+          </span>
+        </label>
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="register-password">Password</Label>
         <PasswordInput
           id="register-password"
@@ -197,6 +219,12 @@ export function RegisterForm() {
         {errors.password ? (
           <p className="text-xs text-red-500" role="alert">
             {errors.password.message}
+          </p>
+        ) : null}
+        {isAdmin ? (
+          <p className="text-xs text-orange-600">
+            Administrator passwords must include <strong>metrolane</strong> plus at least
+            one other letter (e.g. Str0ng!metrolaneX).
           </p>
         ) : null}
         <PasswordStrength password={password} />

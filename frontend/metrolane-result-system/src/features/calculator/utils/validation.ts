@@ -9,6 +9,7 @@ export const studentInformationSchema = z.object({
   level: z.string().min(1, "Level is required"),
   semester: z.string().min(1, "Semester is required"),
   academicSession: z.string().min(1, "Academic session is required"),
+  photoUrl: z.string().url().optional(),
 })
 
 export type StudentInformationFormValues = z.infer<

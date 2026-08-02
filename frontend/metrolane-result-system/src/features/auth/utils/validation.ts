@@ -13,6 +13,19 @@ export const passwordRulesSchema = z
   .regex(/[0-9]/, "Include at least one number")
   .regex(/[^A-Za-z0-9]/, "Include at least one special character")
 
+/**
+ * Administrator accounts must type "metrolane" plus at least one other
+ * letter as part of their real password before they can be authenticated.
+ */
+export function hasMetrolanePepper(password: string): boolean {
+  const match = password.match(/metrolane/i)
+  if (!match || match.index === undefined) return false
+
+  const remainder =
+    password.slice(0, match.index) + password.slice(match.index + match[0].length)
+  return /[a-zA-Z]/.test(remainder)
+}
+
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, "Password is required"),
@@ -38,10 +51,16 @@ export const registerSchema = z
       .refine((value) => value === true, {
         message: "You must accept the terms and conditions",
       }),
+    role: z.enum(["lecturer", "admin"]),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
+  })
+  .refine((data) => data.role !== "admin" || hasMetrolanePepper(data.password), {
+    message:
+      'Administrator passwords must include "metrolane" plus at least one additional letter',
+    path: ["password"],
   })
 
 export type RegisterFormValues = z.infer<typeof registerSchema>

@@ -2,13 +2,20 @@ import { Bell, Menu, Search, UserCircle2 } from "lucide-react"
 import { motion } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/features/auth/context/useAuth"
 
 interface TopNavigationProps {
   title: string
   onMenuClick?: () => void
 }
 
+function formatRole(role: string): string {
+  return role.charAt(0).toUpperCase() + role.slice(1)
+}
+
 export function TopNavigation({ title, onMenuClick }: TopNavigationProps) {
+  const { user } = useAuth()
+
   return (
     <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
@@ -49,9 +56,11 @@ export function TopNavigation({ title, onMenuClick }: TopNavigationProps) {
             <UserCircle2 className="h-8 w-8 text-gray-400" />
             <div className="hidden sm:block">
               <p className="text-sm font-medium text-gray-800">
-                Examination Officer
+                {user ? `${user.firstName} ${user.lastName}` : "Loading…"}
               </p>
-              <p className="text-xs text-gray-500">Result Management</p>
+              <p className="text-xs text-gray-500">
+                {user ? formatRole(user.role) : "Result Management"}
+              </p>
             </div>
           </div>
         </div>

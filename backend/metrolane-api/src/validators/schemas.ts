@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { hasMetrolanePepper } from "../utils/adminPassword.js"
+
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
@@ -21,9 +23,13 @@ export const registerSchema = z.object({
     .regex(/[^A-Za-z0-9]/),
   confirmPassword: z.string().min(1),
   acceptTerms: z.literal(true),
+  role: z.enum(["lecturer", "admin"]).default("lecturer"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
+}).refine((data) => data.role !== "admin" || hasMetrolanePepper(data.password), {
+  message: 'Administrator passwords must include "metrolane" plus at least one additional letter',
+  path: ["password"],
 })
 
 export const forgotPasswordSchema = z.object({
@@ -83,4 +89,10 @@ export const studentRecordsQuerySchema = z.object({
   status: z.enum(["Generated", "Approved", "Pending", "Rejected"]).optional(),
   department: z.string().optional(),
   search: z.string().optional(),
+})
+
+export const uploadStudentPhotoSchema = z.object({
+  matricNumber: z.string().min(1),
+  photoBase64: z.string().min(1),
+  mimeType: z.string().regex(/^image\//, "File must be an image"),
 })

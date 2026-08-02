@@ -1,14 +1,12 @@
 import "dotenv/config"
 
 import { createApp } from "./app.js"
-import { configureCloudinary } from "./config/cloudinary.js"
-import { connectDatabase } from "./config/database.js"
 import { env } from "./config/env.js"
 import { connectRedis } from "./config/redis.js"
+import { verifySupabaseConnection } from "./config/supabase.js"
 
 async function bootstrap() {
-  configureCloudinary()
-  await connectDatabase()
+  await verifySupabaseConnection()
   await connectRedis()
 
   const app = createApp()

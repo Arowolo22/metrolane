@@ -29,3 +29,39 @@ export interface StudentRecord {
   academicSession: string
   faculty: string
 }
+
+export interface ResultDetailStudent {
+  studentName: string
+  matricNumber: string
+  faculty: string
+  department: string
+  programme: string
+  level: string
+  semester: string
+  academicSession: string
+  photoUrl?: string
+}
+
+export interface ResultDetailSummary {
+  totalCourses: number
+  totalCreditUnits: number
+  totalQualityPoints: number
+  semesterGpa: number
+  cumulativeGpa: number | null
+  academicStanding: string
+  degreeClassification: string
+  academicRemarks: string
+}
+
+export interface ResultDetail {
+  id: string
+  student: ResultDetailStudent
+  courses: CourseResult[]
+  summary: ResultDetailSummary
+  status: ResultStatus
+  filename: string
+  pdfUrl?: string
+  generatedAt: string
+  createdAt: string
+  updatedAt: string
+}

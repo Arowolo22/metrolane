@@ -1,64 +1,134 @@
 import argon2 from "argon2"
-import { Schema, model, type Document, type Types } from "mongoose"
+
+import { formatSupabaseError, supabaseAdmin } from "../config/supabase.js"
+
+export type UserRole = "lecturer" | "admin"
 
 export interface IUser {
+  id: string
   firstName: string
   lastName: string
   department: string
   email: string
   phone: string
   passwordHash: string
-  role: "lecturer" | "admin"
+  role: UserRole
   isActive: boolean
+  createdAt: string
+  updatedAt: string
 }
 
-export interface IUserDocument extends IUser, Document {
-  _id: Types.ObjectId
-  comparePassword(candidate: string): Promise<boolean>
-  fullName: string
+type UserRow = {
+  id: string
+  first_name: string
+  last_name: string
+  department: string
+  email: string
+  phone: string
+  password_hash: string
+  role: UserRole
+  is_active: boolean
+  created_at: string
+  updated_at: string
 }
 
-const userSchema = new Schema<IUserDocument>(
-  {
-    firstName: { type: String, required: true, trim: true },
-    lastName: { type: String, required: true, trim: true },
-    department: { type: String, required: true, trim: true },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    phone: { type: String, required: true, trim: true },
-    passwordHash: { type: String, required: true, select: false },
-    role: { type: String, enum: ["lecturer", "admin"], default: "lecturer" },
-    isActive: { type: Boolean, default: true },
-  },
-  { timestamps: true },
-)
+const USERS_TABLE = "users"
 
-userSchema.virtual("fullName").get(function fullName(this: IUserDocument) {
-  return `${this.firstName} ${this.lastName}`
-})
-
-userSchema.methods.comparePassword = async function comparePassword(
-  candidate: string,
-): Promise<boolean> {
-  return argon2.verify(this.passwordHash, candidate)
+function fromRow(row: UserRow): IUser {
+  return {
+    id: row.id,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    department: row.department,
+    email: row.email,
+    phone: row.phone,
+    passwordHash: row.password_hash,
+    role: row.role,
+    isActive: row.is_active,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
 }
-
-userSchema.set("toJSON", {
-  virtuals: true,
-  transform(_doc, ret: any) {
-    delete ret.passwordHash
-    delete ret.__v
-    return ret
-  },
-})
-
-export const User = model<IUserDocument>("User", userSchema)
 
 export async function hashPassword(password: string): Promise<string> {
   return argon2.hash(password)
+}
+
+export async function verifyPassword(
+  passwordHash: string,
+  candidate: string,
+): Promise<boolean> {
+  return argon2.verify(passwordHash, candidate)
+}
+
+export async function findUserByEmail(email: string): Promise<IUser | null> {
+  const { data, error } = await supabaseAdmin
+    .from(USERS_TABLE)
+    .select("*")
+    .eq("email", email.toLowerCase())
+    .maybeSingle()
+
+  if (error) {
+    throw formatSupabaseError(error, "Failed to look up user by email")
+  }
+
+  return data ? fromRow(data as UserRow) : null
+}
+
+export async function findUserById(id: string): Promise<IUser | null> {
+  const { data, error } = await supabaseAdmin
+    .from(USERS_TABLE)
+    .select("*")
+    .eq("id", id)
+    .maybeSingle()
+
+  if (error) {
+    throw formatSupabaseError(error, "Failed to look up user by id")
+  }
+
+  return data ? fromRow(data as UserRow) : null
+}
+
+export async function createUser(input: {
+  firstName: string
+  lastName: string
+  department: string
+  email: string
+  phone: string
+  passwordHash: string
+  role?: UserRole
+}): Promise<IUser> {
+  const { data, error } = await supabaseAdmin
+    .from(USERS_TABLE)
+    .insert({
+      first_name: input.firstName,
+      last_name: input.lastName,
+      department: input.department,
+      email: input.email.toLowerCase(),
+      phone: input.phone,
+      password_hash: input.passwordHash,
+      role: input.role ?? "lecturer",
+    })
+    .select("*")
+    .single()
+
+  if (error) {
+    throw formatSupabaseError(error, "Failed to create user")
+  }
+
+  return fromRow(data as UserRow)
+}
+
+export async function updateUserPasswordHash(
+  id: string,
+  passwordHash: string,
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from(USERS_TABLE)
+    .update({ password_hash: passwordHash })
+    .eq("id", id)
+
+  if (error) {
+    throw formatSupabaseError(error, "Failed to update password")
+  }
 }

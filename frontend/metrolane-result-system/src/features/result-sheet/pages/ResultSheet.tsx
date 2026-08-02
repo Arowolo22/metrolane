@@ -2,14 +2,14 @@ import type { CourseRecord } from "@/features/calculator/types"
 import type { StudentInformationFormValues } from "@/features/calculator/utils/validation"
 import { buildResultSummary } from "@/features/result-sheet/utils/resultHelpers"
 
-import { AcademicRecordTable } from "./AcademicRecordTable"
-import { AcademicRemarks } from "./AcademicRemarks"
-import { CGPASummary } from "./CGPASummary"
-import { Footer } from "./Footer"
-import { InstitutionHeader } from "./InstitutionHeader"
-import { SemesterSummary } from "./SemesterSummary"
-import { SignatureSection } from "./SignatureSection"
-import { StudentInformationCard } from "./StudentInformationCard"
+import { AcademicRecordTable } from "../components/AcademicRecordTable"
+import { AcademicRemarks } from "../components/AcademicRemarks"
+import { CGPASummary } from "../components/CGPASummary"
+import { Footer } from "../components/Footer"
+import { InstitutionHeader } from "../components/InstitutionHeader"
+import { SemesterSummary } from "../components/SemesterSummary"
+import { SignatureSection } from "../components/SignatureSection"
+import { StudentInformationCard } from "../components/StudentInformationCard"
 
 interface ResultSheetProps {
   student: StudentInformationFormValues
@@ -26,7 +26,7 @@ export function ResultSheet({
 
   return (
     <article className="mx-auto w-full max-w-[210mm] space-y-6 bg-white p-8 shadow-lg">
-      <InstitutionHeader />
+      <InstitutionHeader photoUrl={student.photoUrl} />
       <StudentInformationCard student={student} generatedAt={generatedAt} />
       <AcademicRecordTable courses={courses} />
       <SemesterSummary summary={summary} />

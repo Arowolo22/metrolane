@@ -1,9 +1,11 @@
 import type { ComponentType } from "react"
-import { NavLink } from "react-router-dom"
+import { useState } from "react"
+import { NavLink, useNavigate } from "react-router-dom"
 import {
   Calculator,
   GraduationCap,
   HelpCircle,
+  Loader2,
   LogOut,
   Settings,
   Users,
@@ -11,6 +13,7 @@ import {
 import { motion } from "framer-motion"
 
 import { Separator } from "@/components/ui/separator"
+import { useAuth } from "@/features/auth/context/useAuth"
 import { cn } from "@/lib/utils"
 
 const mainNavItems = [
@@ -21,7 +24,6 @@ const mainNavItems = [
 
 const bottomNavItems = [
   { to: "/support", label: "Support", icon: HelpCircle },
-  { to: "/logout", label: "Logout", icon: LogOut },
 ] as const
 
 function NavItem({
@@ -56,6 +58,38 @@ function NavItem({
   )
 }
 
+function LogoutButton() {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  async function handleLogout() {
+    setIsLoggingOut(true)
+    try {
+      await logout()
+    } finally {
+      setIsLoggingOut(false)
+      navigate("/login", { replace: true })
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleLogout}
+      disabled={isLoggingOut}
+      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-60"
+    >
+      {isLoggingOut ? (
+        <Loader2 className="h-5 w-5 shrink-0 animate-spin" />
+      ) : (
+        <LogOut className="h-5 w-5 shrink-0" />
+      )}
+      <span>Logout</span>
+    </button>
+  )
+}
+
 export function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-gray-200 bg-white lg:flex">
@@ -86,6 +120,7 @@ export function Sidebar() {
             {bottomNavItems.map((item) => (
               <NavItem key={item.to} {...item} />
             ))}
+            <LogoutButton />
           </div>
         </div>
       </nav>

@@ -13,6 +13,7 @@ export type RegisterPayload = {
   password: string
   confirmPassword: string
   acceptTerms: boolean
+  role?: "lecturer" | "admin"
 }
 
 export type ForgotPasswordPayload = {

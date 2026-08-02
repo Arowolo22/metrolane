@@ -1,4 +1,4 @@
-import { Schema, model, type Document, type Types } from "mongoose"
+import { formatSupabaseError, supabaseAdmin } from "../config/supabase.js"
 
 export type ResultStatus = "Generated" | "Approved" | "Pending" | "Rejected"
 
@@ -38,84 +38,205 @@ export interface IResultSummary {
 }
 
 export interface IResult {
+  id: string
   student: IStudentInfo
   courses: ICourseResult[]
   summary: IResultSummary
   status: ResultStatus
   filename: string
   pdfUrl?: string
-  generatedAt: Date
-  createdBy: Types.ObjectId
+  generatedAt: string
+  createdBy: string
+  createdAt: string
+  updatedAt: string
 }
 
-export interface IResultDocument extends IResult, Document {
-  _id: Types.ObjectId
-  createdAt: Date
-  updatedAt: Date
+type ResultRow = {
+  id: string
+  student: IStudentInfo
+  courses: ICourseResult[]
+  summary: IResultSummary
+  status: ResultStatus
+  filename: string
+  pdf_url: string | null
+  generated_at: string
+  created_by: string
+  created_at: string
+  updated_at: string
 }
 
-const courseResultSchema = new Schema<ICourseResult>(
-  {
-    courseCode: { type: String, required: true },
-    courseTitle: { type: String, required: true },
-    creditUnit: { type: Number, required: true },
-    continuousAssessment: { type: Number, required: true },
-    examinationScore: { type: Number, required: true },
-    total: { type: Number, required: true },
-    grade: { type: String, required: true },
-    gradePoint: { type: Number, required: true },
-    qualityPoints: { type: Number, required: true },
-  },
-  { _id: false },
-)
+const RESULTS_TABLE = "results"
 
-const studentInfoSchema = new Schema<IStudentInfo>(
-  {
-    studentName: { type: String, required: true },
-    matricNumber: { type: String, required: true, index: true },
-    faculty: { type: String, required: true },
-    department: { type: String, required: true },
-    programme: { type: String, required: true },
-    level: { type: String, required: true },
-    semester: { type: String, required: true },
-    academicSession: { type: String, required: true },
-    photoUrl: { type: String },
-  },
-  { _id: false },
-)
+function fromRow(row: ResultRow): IResult {
+  return {
+    id: row.id,
+    student: row.student,
+    courses: row.courses,
+    summary: row.summary,
+    status: row.status,
+    filename: row.filename,
+    pdfUrl: row.pdf_url ?? undefined,
+    generatedAt: row.generated_at,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
 
-const resultSummarySchema = new Schema<IResultSummary>(
-  {
-    totalCourses: { type: Number, required: true },
-    totalCreditUnits: { type: Number, required: true },
-    totalQualityPoints: { type: Number, required: true },
-    semesterGpa: { type: Number, required: true },
-    cumulativeGpa: { type: Number, default: null },
-    academicStanding: { type: String, required: true },
-    degreeClassification: { type: String, required: true },
-    academicRemarks: { type: String, required: true },
-  },
-  { _id: false },
-)
+export async function insertResult(input: {
+  student: IStudentInfo
+  courses: ICourseResult[]
+  summary: IResultSummary
+  status: ResultStatus
+  filename: string
+  generatedAt: string
+  createdBy: string
+}): Promise<IResult> {
+  const { data, error } = await supabaseAdmin
+    .from(RESULTS_TABLE)
+    .insert({
+      student: input.student,
+      courses: input.courses,
+      summary: input.summary,
+      status: input.status,
+      filename: input.filename,
+      generated_at: input.generatedAt,
+      created_by: input.createdBy,
+    })
+    .select("*")
+    .single()
 
-const resultSchema = new Schema<IResultDocument>(
-  {
-    student: { type: studentInfoSchema, required: true },
-    courses: { type: [courseResultSchema], required: true },
-    summary: { type: resultSummarySchema, required: true },
-    status: {
-      type: String,
-      enum: ["Generated", "Approved", "Pending", "Rejected"],
-      default: "Generated",
-    },
-    filename: { type: String, required: true },
-    pdfUrl: { type: String },
-    generatedAt: { type: Date, required: true },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  },
-  { timestamps: true },
-)
+  if (error) {
+    throw formatSupabaseError(error, "Failed to save result")
+  }
 
-resultSchema.index({ "student.matricNumber": 1, "student.academicSession": 1, "student.semester": 1 })
+  return fromRow(data as ResultRow)
+}
 
-export const Result = model<IResultDocument>("Result", resultSchema)
+export async function findResultById(id: string): Promise<IResult | null> {
+  const { data, error } = await supabaseAdmin
+    .from(RESULTS_TABLE)
+    .select("*")
+    .eq("id", id)
+    .maybeSingle()
+
+  if (error) {
+    throw formatSupabaseError(error, "Failed to look up result")
+  }
+
+  return data ? fromRow(data as ResultRow) : null
+}
+
+export async function findActiveResultByMatricSessionSemester(
+  matricNumber: string,
+  academicSession: string,
+  semester: string,
+): Promise<IResult | null> {
+  const { data, error } = await supabaseAdmin
+    .from(RESULTS_TABLE)
+    .select("*")
+    .eq("student->>matricNumber", matricNumber)
+    .eq("student->>academicSession", academicSession)
+    .eq("student->>semester", semester)
+    .neq("status", "Rejected")
+    .maybeSingle()
+
+  if (error) {
+    throw formatSupabaseError(error, "Failed to check for duplicate result")
+  }
+
+  return data ? fromRow(data as ResultRow) : null
+}
+
+export async function sumPreviousTotals(matricNumber: string): Promise<{
+  previousQualityPoints: number
+  previousCreditUnits: number
+}> {
+  const { data, error } = await supabaseAdmin
+    .from(RESULTS_TABLE)
+    .select("summary")
+    .eq("student->>matricNumber", matricNumber)
+    .neq("status", "Rejected")
+
+  if (error) {
+    throw formatSupabaseError(error, "Failed to compute previous totals")
+  }
+
+  let previousQualityPoints = 0
+  let previousCreditUnits = 0
+
+  for (const row of (data ?? []) as Array<{ summary: IResultSummary }>) {
+    previousQualityPoints += row.summary.totalQualityPoints
+    previousCreditUnits += row.summary.totalCreditUnits
+  }
+
+  return { previousQualityPoints, previousCreditUnits }
+}
+
+export async function updateResultStatusRow(
+  id: string,
+  status: ResultStatus,
+): Promise<IResult | null> {
+  const { data, error } = await supabaseAdmin
+    .from(RESULTS_TABLE)
+    .update({ status })
+    .eq("id", id)
+    .select("*")
+    .maybeSingle()
+
+  if (error) {
+    throw formatSupabaseError(error, "Failed to update result status")
+  }
+
+  return data ? fromRow(data as ResultRow) : null
+}
+
+export async function updateResultPdfUrl(
+  id: string,
+  pdfUrl: string,
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from(RESULTS_TABLE)
+    .update({ pdf_url: pdfUrl })
+    .eq("id", id)
+
+  if (error) {
+    throw formatSupabaseError(error, "Failed to attach PDF url")
+  }
+}
+
+export async function listResults(filters?: {
+  status?: ResultStatus
+  department?: string
+  search?: string
+}): Promise<IResult[]> {
+  let query = supabaseAdmin
+    .from(RESULTS_TABLE)
+    .select("*")
+    .order("created_at", { ascending: false })
+
+  if (filters?.status) {
+    query = query.eq("status", filters.status)
+  }
+  if (filters?.department) {
+    query = query.eq("student->>department", filters.department)
+  }
+
+  const { data, error } = await query
+  if (error) {
+    throw formatSupabaseError(error, "Failed to list results")
+  }
+
+  const results = (data ?? []).map((row) => fromRow(row as ResultRow))
+
+  const term = filters?.search?.trim().toLowerCase()
+  if (!term) {
+    return results
+  }
+
+  return results.filter(
+    (result) =>
+      result.student.studentName.toLowerCase().includes(term) ||
+      result.student.matricNumber.toLowerCase().includes(term),
+  )
+}

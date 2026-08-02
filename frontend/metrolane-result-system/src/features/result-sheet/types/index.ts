@@ -32,4 +32,4 @@ export interface SaveResultRecordPayload {
 
 export type ResultPersistenceAdapter = (
   payload: SaveResultRecordPayload,
-) => Promise<void>
+) => Promise<unknown>

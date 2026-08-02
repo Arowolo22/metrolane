@@ -1,6 +1,14 @@
-import type { Types } from "mongoose"
-
-import { Result, type IResultDocument, type ResultStatus } from "../models/Result.js"
+import {
+  findActiveResultByMatricSessionSemester,
+  findResultById,
+  insertResult,
+  listResults,
+  sumPreviousTotals,
+  updateResultPdfUrl,
+  updateResultStatusRow,
+  type IResult,
+  type ResultStatus,
+} from "../models/Result.js"
 import { AppError } from "../middleware/errorHandler.js"
 import {
   academicStandingFromGpa,
@@ -45,27 +53,6 @@ function normalizeCourse(course: CreateResultInput["courses"][number]): CourseIn
   }
 }
 
-async function getPreviousTotals(matricNumber: string, excludeId?: string) {
-  const filter: Record<string, unknown> = {
-    "student.matricNumber": matricNumber.trim().toUpperCase(),
-    status: { $ne: "Rejected" },
-  }
-  if (excludeId) {
-    filter._id = { $ne: excludeId }
-  }
-
-  const previousResults = await Result.find(filter).select("summary courses")
-  let previousQualityPoints = 0
-  let previousCreditUnits = 0
-
-  for (const result of previousResults) {
-    previousQualityPoints += result.summary.totalQualityPoints
-    previousCreditUnits += result.summary.totalCreditUnits
-  }
-
-  return { previousQualityPoints, previousCreditUnits }
-}
-
 function buildAcademicRemarks(gpa: number, cgpa: number | null): string {
   const standing = academicStandingFromGpa(gpa)
   if (cgpa === null) {
@@ -77,19 +64,19 @@ function buildAcademicRemarks(gpa: number, cgpa: number | null): string {
 
 export async function createResult(
   input: CreateResultInput,
-  createdBy: Types.ObjectId,
-): Promise<IResultDocument> {
+  createdBy: string,
+): Promise<IResult> {
   const normalizedCourses = input.courses.map(normalizeCourse)
   const computedCourses = computeCourseResults(normalizedCourses)
   const { gpa, totalCreditUnits, totalQualityPoints } = computeGpa(computedCourses)
 
   const matricNumber = input.student.matricNumber.trim().toUpperCase()
-  const duplicate = await Result.findOne({
-    "student.matricNumber": matricNumber,
-    "student.academicSession": input.student.academicSession,
-    "student.semester": input.student.semester,
-    status: { $ne: "Rejected" },
-  })
+
+  const duplicate = await findActiveResultByMatricSessionSemester(
+    matricNumber,
+    input.student.academicSession,
+    input.student.semester,
+  )
 
   if (duplicate) {
     throw new AppError(
@@ -99,7 +86,7 @@ export async function createResult(
   }
 
   const { previousQualityPoints, previousCreditUnits } =
-    await getPreviousTotals(matricNumber)
+    await sumPreviousTotals(matricNumber)
 
   const cumulativeGpa = computeCgpa(
     previousQualityPoints,
@@ -111,7 +98,7 @@ export async function createResult(
   const degreeClassification =
     cumulativeGpa !== null ? classifyCgpa(cumulativeGpa) : classifyCgpa(gpa)
 
-  const result = await Result.create({
+  const result = await insertResult({
     student: {
       ...input.student,
       matricNumber,
@@ -129,15 +116,19 @@ export async function createResult(
     },
     status: "Generated",
     filename: input.filename,
-    generatedAt: new Date(input.generatedAt),
+    generatedAt: input.generatedAt,
     createdBy,
   })
 
   return result
 }
 
-export async function getResultById(id: string): Promise<IResultDocument> {
-  const result = await Result.findById(id).populate("createdBy", "firstName lastName email")
+export async function attachResultPdf(id: string, pdfUrl: string): Promise<void> {
+  await updateResultPdfUrl(id, pdfUrl)
+}
+
+export async function getResultById(id: string): Promise<IResult> {
+  const result = await findResultById(id)
   if (!result) {
     throw new AppError("Result not found", 404)
   }
@@ -148,73 +139,24 @@ export async function listStudentRecords(filters?: {
   status?: ResultStatus
   department?: string
   search?: string
-}) {
-  const query: Record<string, unknown> = {}
-
-  if (filters?.status) {
-    query.status = filters.status
-  }
-  if (filters?.department) {
-    query["student.department"] = filters.department
-  }
-  if (filters?.search) {
-    const term = filters.search.trim()
-    query.$or = [
-      { "student.studentName": { $regex: term, $options: "i" } },
-      { "student.matricNumber": { $regex: term, $options: "i" } },
-    ]
-  }
-
-  const results = await Result.find(query)
-    .sort({ createdAt: -1 })
-    .select("-courses")
-
-  return results.map((result) => ({
-    id: result._id.toString(),
-    studentName: result.student.studentName,
-    matricNumber: result.student.matricNumber,
-    department: result.student.department,
-    programme: result.student.programme,
-    level: result.student.level,
-    semester: result.student.semester,
-    gpa: result.summary.semesterGpa,
-    cgpa: result.summary.cumulativeGpa,
-    status: result.status,
-    totalCreditUnits: result.summary.totalCreditUnits,
-    totalGradePoints: result.summary.totalQualityPoints,
-    academicStanding: result.summary.academicStanding,
-    academicSession: result.student.academicSession,
-    faculty: result.student.faculty,
-    generatedAt: result.generatedAt,
-    filename: result.filename,
-  }))
+}): Promise<IResult[]> {
+  return listResults(filters)
 }
 
 export async function updateResultStatus(
   id: string,
   status: ResultStatus,
-): Promise<IResultDocument> {
-  const validStatuses: ResultStatus[] = ["Generated", "Approved", "Pending", "Rejected"]
-  if (!validStatuses.includes(status)) {
-    throw new AppError("Invalid status value", 400)
-  }
-
-  const result = await Result.findByIdAndUpdate(
-    id,
-    { status },
-    { new: true, runValidators: true },
-  )
-
+): Promise<IResult> {
+  const result = await updateResultStatusRow(id, status)
   if (!result) {
     throw new AppError("Result not found", 404)
   }
-
   return result
 }
 
-export function formatResultDetail(result: IResultDocument) {
+export function formatResultDetail(result: IResult) {
   return {
-    id: result._id.toString(),
+    id: result.id,
     student: result.student,
     courses: result.courses.map((course) => ({
       courseCode: course.courseCode,
@@ -236,9 +178,9 @@ export function formatResultDetail(result: IResultDocument) {
   }
 }
 
-export function formatStudentRecordListItem(result: IResultDocument) {
+export function formatStudentRecordListItem(result: IResult) {
   return {
-    id: result._id.toString(),
+    id: result.id,
     studentName: result.student.studentName,
     matricNumber: result.student.matricNumber,
     department: result.student.department,
