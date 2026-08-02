@@ -1,9 +1,18 @@
 import { motion } from "framer-motion"
 
 import { Card, CardContent } from "@/components/ui/card"
-import { PLACEHOLDER_VALUE } from "@/lib/utils"
+import type { CourseRecord } from "@/features/calculator/types"
 
-export function CreditLoadCard() {
+interface CreditLoadCardProps {
+  courses: CourseRecord[]
+}
+
+export function CreditLoadCard({ courses }: CreditLoadCardProps) {
+  const totalCreditUnits = courses.reduce((sum, course) => {
+    const units = Number(course.creditUnit)
+    return sum + (Number.isNaN(units) ? 0 : units)
+  }, 0)
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -14,7 +23,7 @@ export function CreditLoadCard() {
         <CardContent className="p-6">
           <p className="text-sm font-medium text-gray-500">Total Credit Load</p>
           <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
-            {PLACEHOLDER_VALUE}
+            {totalCreditUnits}
           </p>
         </CardContent>
       </Card>

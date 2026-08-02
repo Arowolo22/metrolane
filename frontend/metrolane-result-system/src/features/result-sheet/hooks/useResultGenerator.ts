@@ -64,9 +64,13 @@ export function useResultGenerator(options: UseResultGeneratorOptions = {}) {
 
         toast.success("Result generated and downloaded successfully.")
         return true
-      } catch {
+      } catch (error) {
+        console.error("PDF generation failed", error)
         toast.error("PDF generation failed", {
-          description: "Please try again or contact support.",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Please try again or contact support.",
         })
         return false
       } finally {

@@ -9,12 +9,14 @@ import { getSavedCourses } from "./resultHelpers"
 export const resultGenerationStudentSchema = z.object({
   studentName: z.string().min(1, "Student name is required"),
   matricNumber: z.string().min(1, "Matric number is required"),
-  faculty: z.string().min(1, "Faculty is required"),
+  faculty: z.string().optional(),
   department: z.string().min(1, "Department is required"),
-  programme: z.string().min(1, "Programme is required"),
+  programme: z.string().optional(),
   level: z.string().min(1, "Level is required"),
   semester: z.string().min(1, "Semester is required"),
   academicSession: z.string().min(1, "Academic session is required"),
+  currentGpa: z.string().min(1, "Current GPA is required"),
+  totalCreditUnits: z.string().min(1, "Total credit units is required"),
 })
 
 export interface ResultValidationResult {

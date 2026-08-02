@@ -3,12 +3,26 @@ import { z } from "zod"
 export const studentInformationSchema = z.object({
   studentName: z.string().min(1, "Student name is required"),
   matricNumber: z.string().min(1, "Matric number is required"),
-  faculty: z.string().min(1, "Faculty is required"),
+  faculty: z.string().optional(),
   department: z.string().min(1, "Department is required"),
-  programme: z.string().min(1, "Programme is required"),
+  programme: z.string().optional(),
   level: z.string().min(1, "Level is required"),
   semester: z.string().min(1, "Semester is required"),
   academicSession: z.string().min(1, "Academic session is required"),
+  currentGpa: z
+    .string()
+    .min(1, "Current GPA is required")
+    .refine((value) => {
+      const parsed = Number(value)
+      return !Number.isNaN(parsed) && parsed >= 0 && parsed <= 5
+    }, { message: "Current GPA must be between 0 and 5" }),
+  totalCreditUnits: z
+    .string()
+    .min(1, "Total credit units is required")
+    .refine((value) => {
+      const parsed = Number(value)
+      return !Number.isNaN(parsed) && parsed >= 0
+    }, { message: "Enter a valid credit unit value" }),
   photoUrl: z.string().url().optional(),
 })
 

@@ -23,12 +23,14 @@ export type CreateResultInput = {
   student: {
     studentName: string
     matricNumber: string
-    faculty: string
+    faculty?: string
     department: string
-    programme: string
+    programme?: string
     level: string
     semester: string
     academicSession: string
+    currentGpa?: string | number
+    totalCreditUnits?: string | number
     photoUrl?: string
   }
   courses: Array<{
@@ -102,6 +104,8 @@ export async function createResult(
     student: {
       ...input.student,
       matricNumber,
+      currentGpa: input.student.currentGpa,
+      totalCreditUnits: input.student.totalCreditUnits,
     },
     courses: computedCourses,
     summary: {
@@ -184,7 +188,7 @@ export function formatStudentRecordListItem(result: IResult) {
     studentName: result.student.studentName,
     matricNumber: result.student.matricNumber,
     department: result.student.department,
-    programme: result.student.programme,
+    programme: result.student.programme ?? "",
     level: result.student.level,
     semester: result.student.semester,
     gpa: result.summary.semesterGpa,

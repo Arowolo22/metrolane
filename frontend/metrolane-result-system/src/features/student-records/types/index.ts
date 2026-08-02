@@ -33,12 +33,14 @@ export interface StudentRecord {
 export interface ResultDetailStudent {
   studentName: string
   matricNumber: string
-  faculty: string
+  faculty?: string
   department: string
-  programme: string
+  programme?: string
   level: string
   semester: string
   academicSession: string
+  currentGpa?: string
+  totalCreditUnits?: string
   photoUrl?: string
 }
 

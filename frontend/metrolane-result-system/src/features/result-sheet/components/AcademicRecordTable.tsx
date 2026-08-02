@@ -8,7 +8,10 @@ import {
 } from "@/components/ui/table"
 import type { CourseRecord } from "@/features/calculator/types"
 import { PLACEHOLDER_VALUE } from "@/lib/utils"
-import { computeTotalScore } from "@/features/result-sheet/utils/resultHelpers"
+import {
+  computeTotalScore,
+  getCoursePerformance,
+} from "@/features/result-sheet/utils/resultHelpers"
 
 interface AcademicRecordTableProps {
   courses: CourseRecord[]
@@ -36,8 +39,11 @@ export function AcademicRecordTable({ courses }: AcademicRecordTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {courses.map((course) => (
-              <TableRow key={course.id}>
+            {courses.map((course) => {
+              const performance = getCoursePerformance(course)
+
+              return (
+                <TableRow key={course.id}>
                 <TableCell className="font-semibold text-orange-600">
                   {course.courseCode}
                 </TableCell>
@@ -51,11 +57,12 @@ export function AcademicRecordTable({ courses }: AcademicRecordTableProps) {
                     course.examinationScore,
                   )}
                 </TableCell>
-                <TableCell>{PLACEHOLDER_VALUE}</TableCell>
-                <TableCell>{PLACEHOLDER_VALUE}</TableCell>
-                <TableCell>{PLACEHOLDER_VALUE}</TableCell>
+                <TableCell>{performance.grade || PLACEHOLDER_VALUE}</TableCell>
+                <TableCell>{performance.gradePoint.toFixed(2)}</TableCell>
+                <TableCell>{performance.qualityPoints.toFixed(2)}</TableCell>
               </TableRow>
-            ))}
+              )
+            })}
           </TableBody>
         </Table>
       </div>

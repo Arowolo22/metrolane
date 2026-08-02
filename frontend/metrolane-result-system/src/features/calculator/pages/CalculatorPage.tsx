@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form"
+import { FormProvider, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -45,8 +45,10 @@ export function CalculatorPage() {
   return (
     <div className="space-y-8">
       <section className="grid gap-6 lg:grid-cols-[1fr_280px]">
-        <StudentInformationCard form={studentForm} />
-        <GPASummaryCard />
+        <FormProvider {...studentForm}>
+          <StudentInformationCard />
+          <GPASummaryCard />
+        </FormProvider>
       </section>
 
       <section>
@@ -61,9 +63,9 @@ export function CalculatorPage() {
 
       <section className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-3">
-          <CreditLoadCard />
-          <GradePointCard />
-          <SemesterGPACard />
+          <CreditLoadCard courses={courses} />
+          <GradePointCard courses={courses} />
+          <SemesterGPACard courses={courses} />
         </div>
 
         {validationErrors.length > 0 && (

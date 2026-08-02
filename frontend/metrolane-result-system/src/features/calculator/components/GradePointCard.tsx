@@ -1,9 +1,21 @@
 import { motion } from "framer-motion"
 
 import { Card, CardContent } from "@/components/ui/card"
-import { PLACEHOLDER_VALUE } from "@/lib/utils"
+import type { CourseRecord } from "@/features/calculator/types"
+import { getGradePoint } from "@/features/result-sheet/utils/resultHelpers"
 
-export function GradePointCard() {
+interface GradePointCardProps {
+  courses: CourseRecord[]
+}
+
+export function GradePointCard({ courses }: GradePointCardProps) {
+  const totalGradePoints = courses.reduce((sum, course) => {
+    const totalScore = Number(course.continuousAssessment) + Number(course.examinationScore)
+    const gradePoint = Number.isNaN(totalScore) ? 0 : getGradePoint(totalScore)
+    const units = Number(course.creditUnit)
+    return sum + (Number.isNaN(units) ? 0 : gradePoint * units)
+  }, 0)
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -14,7 +26,7 @@ export function GradePointCard() {
         <CardContent className="p-6">
           <p className="text-sm font-medium text-gray-500">Total Grade Points</p>
           <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
-            {PLACEHOLDER_VALUE}
+            {totalGradePoints}
           </p>
         </CardContent>
       </Card>

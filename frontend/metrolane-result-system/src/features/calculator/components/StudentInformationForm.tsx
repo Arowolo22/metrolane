@@ -11,26 +11,12 @@ import {
 } from "@/components/ui/select"
 import type { StudentInformationFormValues } from "@/features/calculator/utils/validation"
 
-const facultyOptions = [
-  "Faculty of Health Sciences",
-  "Faculty of Medical Laboratory Science",
-  "Faculty of Public Health",
-] as const
-
 const departmentOptions = [
-  "Community Health",
-  "Medical Laboratory Science",
-  "Health Information Management",
-  "Public Health",
-  "Environmental Health",
-] as const
-
-const programmeOptions = [
-  "Community Health",
-  "Medical Laboratory Science",
-  "Health Information Management",
-  "Public Health",
-  "Environmental Health",
+  "Department of Community Health Technology",
+  "Department of Public Health Technology",
+  "Department of Medical Laboratory Technology",
+  "Department of Health Information, Education and Promotion",
+  "Department of Environmental Health Technology",
 ] as const
 
 const levelOptions = ["100", "200", "300", "400", "500"] as const
@@ -45,9 +31,7 @@ export function StudentInformationForm() {
     formState: { errors },
   } = useFormContext<StudentInformationFormValues>()
 
-  const faculty = watch("faculty")
   const department = watch("department")
-  const programme = watch("programme")
   const level = watch("level")
   const semester = watch("semester")
 
@@ -92,30 +76,6 @@ export function StudentInformationForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="faculty">Faculty</Label>
-        <Select
-          value={faculty || undefined}
-          onValueChange={(value) =>
-            setValue("faculty", value, { shouldValidate: true })
-          }
-        >
-          <SelectTrigger id="faculty">
-            <SelectValue placeholder="Select faculty" />
-          </SelectTrigger>
-          <SelectContent>
-            {facultyOptions.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.faculty && (
-          <p className="text-xs text-red-500">{errors.faculty.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
         <Label htmlFor="department">Department</Label>
         <Select
           value={department || undefined}
@@ -136,30 +96,6 @@ export function StudentInformationForm() {
         </Select>
         {errors.department && (
           <p className="text-xs text-red-500">{errors.department.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="programme">Programme</Label>
-        <Select
-          value={programme || undefined}
-          onValueChange={(value) =>
-            setValue("programme", value, { shouldValidate: true })
-          }
-        >
-          <SelectTrigger id="programme">
-            <SelectValue placeholder="Select programme" />
-          </SelectTrigger>
-          <SelectContent>
-            {programmeOptions.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.programme && (
-          <p className="text-xs text-red-500">{errors.programme.message}</p>
         )}
       </div>
 

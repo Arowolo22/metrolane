@@ -6,7 +6,11 @@ import { Input } from "@/components/ui/input"
 import { TableCell, TableRow } from "@/components/ui/table"
 import type { CourseRecord } from "@/features/calculator/types"
 import { courseRecordSchema } from "@/features/calculator/utils/validation"
-import { PLACEHOLDER_VALUE } from "@/lib/utils"
+import {
+  computeTotalScore,
+  getGradeFromScore,
+  getGradePoint,
+} from "@/features/result-sheet/utils/resultHelpers"
 
 interface CourseTableRowProps {
   course: CourseRecord
@@ -94,6 +98,20 @@ export function CourseTableRow({
     onToggleEdit(course.id, true)
   }
 
+  const sourceValues = course.isEditing ? draft : course
+  const totalScore = computeTotalScore(
+    sourceValues.continuousAssessment,
+    sourceValues.examinationScore,
+  )
+  const grade =
+    totalScore === "--"
+      ? "--"
+      : getGradeFromScore(Number(totalScore))
+  const gradePoint =
+    totalScore === "--"
+      ? "--"
+      : String(getGradePoint(Number(totalScore)))
+
   if (course.isEditing) {
     return (
       <TableRow>
@@ -168,15 +186,9 @@ export function CourseTableRow({
             </p>
           )}
         </TableCell>
-        <TableCell className="font-medium text-gray-500">
-          {PLACEHOLDER_VALUE}
-        </TableCell>
-        <TableCell className="font-medium text-gray-500">
-          {PLACEHOLDER_VALUE}
-        </TableCell>
-        <TableCell className="font-medium text-gray-500">
-          {PLACEHOLDER_VALUE}
-        </TableCell>
+        <TableCell className="font-medium text-gray-900">{totalScore}</TableCell>
+        <TableCell className="font-medium text-gray-900">{grade}</TableCell>
+        <TableCell className="font-medium text-gray-900">{gradePoint}</TableCell>
         <TableCell>
           <div className="flex items-center gap-1">
             <Button
@@ -212,15 +224,9 @@ export function CourseTableRow({
       <TableCell>{course.creditUnit || "—"}</TableCell>
       <TableCell>{course.continuousAssessment || "—"}</TableCell>
       <TableCell>{course.examinationScore || "—"}</TableCell>
-      <TableCell className="font-medium text-gray-500">
-        {PLACEHOLDER_VALUE}
-      </TableCell>
-      <TableCell className="font-medium text-gray-500">
-        {PLACEHOLDER_VALUE}
-      </TableCell>
-      <TableCell className="font-medium text-gray-500">
-        {PLACEHOLDER_VALUE}
-      </TableCell>
+      <TableCell className="font-medium text-gray-900">{totalScore}</TableCell>
+      <TableCell className="font-medium text-gray-900">{grade}</TableCell>
+      <TableCell className="font-medium text-gray-900">{gradePoint}</TableCell>
       <TableCell>
         <div className="flex items-center gap-1">
           <Button

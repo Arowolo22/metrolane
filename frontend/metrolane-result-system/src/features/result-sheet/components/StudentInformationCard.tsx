@@ -1,23 +1,28 @@
 import type { StudentInformationFormValues } from "@/features/calculator/utils/validation"
 import { formatDisplayDate } from "@/features/result-sheet/utils/resultHelpers"
 
+type StudentInformationCardStudent = Omit<StudentInformationFormValues, "currentGpa" | "totalCreditUnits"> & {
+  currentGpa?: string
+  totalCreditUnits?: string
+}
+
 interface StudentInformationCardProps {
-  student: StudentInformationFormValues
+  student: StudentInformationCardStudent
   generatedAt: Date
 }
 
 const fields: Array<{
   label: string
-  key: keyof StudentInformationFormValues | "dateGenerated"
+  key: keyof StudentInformationCardStudent | "dateGenerated"
 }> = [
   { label: "Student Name", key: "studentName" },
   { label: "Matric Number", key: "matricNumber" },
-  { label: "Faculty", key: "faculty" },
   { label: "Department", key: "department" },
-  { label: "Programme", key: "programme" },
   { label: "Level", key: "level" },
   { label: "Semester", key: "semester" },
   { label: "Academic Session", key: "academicSession" },
+  { label: "Current GPA", key: "currentGpa" },
+  { label: "Total Credit Units", key: "totalCreditUnits" },
   { label: "Date Generated", key: "dateGenerated" },
 ]
 
@@ -41,7 +46,7 @@ export function StudentInformationCard({
                 ? formatDisplayDate(generatedAt)
                 : key === "level"
                   ? `Level ${student.level}`
-                  : student[key]}
+                  : student[key] || "—"}
             </dd>
           </div>
         ))}

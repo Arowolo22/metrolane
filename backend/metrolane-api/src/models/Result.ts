@@ -17,12 +17,14 @@ export interface ICourseResult {
 export interface IStudentInfo {
   studentName: string
   matricNumber: string
-  faculty: string
+  faculty?: string
   department: string
-  programme: string
+  programme?: string
   level: string
   semester: string
   academicSession: string
+  currentGpa?: string | number
+  totalCreditUnits?: string | number
   photoUrl?: string
 }
 
