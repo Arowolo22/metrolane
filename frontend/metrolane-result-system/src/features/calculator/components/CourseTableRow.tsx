@@ -1,22 +1,22 @@
-import { useState } from "react"
-import { Pencil, Trash2, Check, X } from "lucide-react"
+import { useState } from "react";
+import { Pencil, Trash2, Check, X } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { TableCell, TableRow } from "@/components/ui/table"
-import type { CourseRecord } from "@/features/calculator/types"
-import { courseRecordSchema } from "@/features/calculator/utils/validation"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { TableCell, TableRow } from "@/components/ui/table";
+import type { CourseRecord } from "@/features/calculator/types";
+import { courseRecordSchema } from "@/features/calculator/utils/validation";
 import {
   computeTotalScore,
   getGradeFromScore,
   getGradePoint,
-} from "@/features/result-sheet/utils/resultHelpers"
+} from "@/features/result-sheet/utils/resultHelpers";
 
 interface CourseTableRowProps {
-  course: CourseRecord
-  onUpdate: (id: string, updates: Partial<CourseRecord>) => void
-  onDelete: (id: string) => void
-  onToggleEdit: (id: string, isEditing: boolean) => void
+  course: CourseRecord;
+  onUpdate: (id: string, updates: Partial<CourseRecord>) => void;
+  onDelete: (id: string) => void;
+  onToggleEdit: (id: string, isEditing: boolean) => void;
 }
 
 export function CourseTableRow({
@@ -31,37 +31,37 @@ export function CourseTableRow({
     creditUnit: course.creditUnit,
     continuousAssessment: course.continuousAssessment,
     examinationScore: course.examinationScore,
-  })
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleFieldChange = (field: keyof typeof draft, value: string) => {
-    setDraft((prev) => ({ ...prev, [field]: value }))
+    setDraft((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => {
-        const next = { ...prev }
-        delete next[field]
-        return next
-      })
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
     }
-  }
+  };
 
   const handleSave = () => {
-    const result = courseRecordSchema.safeParse(draft)
+    const result = courseRecordSchema.safeParse(draft);
     if (!result.success) {
-      const fieldErrors: Record<string, string> = {}
+      const fieldErrors: Record<string, string> = {};
       result.error.issues.forEach((issue) => {
-        const field = issue.path[0]
+        const field = issue.path[0];
         if (typeof field === "string") {
-          fieldErrors[field] = issue.message
+          fieldErrors[field] = issue.message;
         }
-      })
-      setErrors(fieldErrors)
-      return
+      });
+      setErrors(fieldErrors);
+      return;
     }
 
-    onUpdate(course.id, { ...draft, isEditing: false })
-    onToggleEdit(course.id, false)
-  }
+    onUpdate(course.id, { ...draft, isEditing: false });
+    onToggleEdit(course.id, false);
+  };
 
   const handleCancel = () => {
     const isNew =
@@ -69,11 +69,11 @@ export function CourseTableRow({
       !course.courseTitle &&
       !course.creditUnit &&
       !course.continuousAssessment &&
-      !course.examinationScore
+      !course.examinationScore;
 
     if (isNew) {
-      onDelete(course.id)
-      return
+      onDelete(course.id);
+      return;
     }
 
     setDraft({
@@ -82,10 +82,10 @@ export function CourseTableRow({
       creditUnit: course.creditUnit,
       continuousAssessment: course.continuousAssessment,
       examinationScore: course.examinationScore,
-    })
-    setErrors({})
-    onToggleEdit(course.id, false)
-  }
+    });
+    setErrors({});
+    onToggleEdit(course.id, false);
+  };
 
   const handleEdit = () => {
     setDraft({
@@ -94,23 +94,19 @@ export function CourseTableRow({
       creditUnit: course.creditUnit,
       continuousAssessment: course.continuousAssessment,
       examinationScore: course.examinationScore,
-    })
-    onToggleEdit(course.id, true)
-  }
+    });
+    onToggleEdit(course.id, true);
+  };
 
-  const sourceValues = course.isEditing ? draft : course
+  const sourceValues = course.isEditing ? draft : course;
   const totalScore = computeTotalScore(
     sourceValues.continuousAssessment,
     sourceValues.examinationScore,
-  )
+  );
   const grade =
-    totalScore === "--"
-      ? "--"
-      : getGradeFromScore(Number(totalScore))
+    totalScore === "--" ? "--" : getGradeFromScore(Number(totalScore));
   const gradePoint =
-    totalScore === "--"
-      ? "--"
-      : String(getGradePoint(Number(totalScore)))
+    totalScore === "--" ? "--" : String(getGradePoint(Number(totalScore)));
 
   if (course.isEditing) {
     return (
@@ -140,7 +136,7 @@ export function CourseTableRow({
         <TableCell>
           <Input
             type="number"
-            min={1}
+            min={0}
             value={draft.creditUnit}
             onChange={(e) => handleFieldChange("creditUnit", e.target.value)}
             placeholder="CU"
@@ -186,9 +182,13 @@ export function CourseTableRow({
             </p>
           )}
         </TableCell>
-        <TableCell className="font-medium text-gray-900">{totalScore}</TableCell>
+        <TableCell className="font-medium text-gray-900">
+          {totalScore}
+        </TableCell>
         <TableCell className="font-medium text-gray-900">{grade}</TableCell>
-        <TableCell className="font-medium text-gray-900">{gradePoint}</TableCell>
+        <TableCell className="font-medium text-gray-900">
+          {gradePoint}
+        </TableCell>
         <TableCell>
           <div className="flex items-center gap-1">
             <Button
@@ -212,7 +212,7 @@ export function CourseTableRow({
           </div>
         </TableCell>
       </TableRow>
-    )
+    );
   }
 
   return (
@@ -250,5 +250,5 @@ export function CourseTableRow({
         </div>
       </TableCell>
     </TableRow>
-  )
+  );
 }

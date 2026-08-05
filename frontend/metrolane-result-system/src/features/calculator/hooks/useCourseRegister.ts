@@ -1,15 +1,15 @@
-import { useCallback, useState } from "react"
+import { useCallback, useState } from "react";
 
-import type { CourseRecord } from "@/features/calculator/types"
-import { createEmptyCourse } from "@/features/calculator/types"
-import type { CourseTemplate } from "@/features/calculator/data/courses"
+import type { CourseRecord } from "@/features/calculator/types";
+import { createEmptyCourse } from "@/features/calculator/types";
+import type { CourseTemplate } from "@/features/calculator/data/courses";
 
 export function useCourseRegister() {
-  const [courses, setCourses] = useState<CourseRecord[]>([])
+  const [courses, setCourses] = useState<CourseRecord[]>([]);
 
   const addCourse = useCallback(() => {
-    setCourses((prev) => [...prev, createEmptyCourse()])
-  }, [])
+    setCourses((prev) => [...prev, createEmptyCourse()]);
+  }, []);
 
   const addCourseFromTemplate = useCallback((template: CourseTemplate) => {
     setCourses((prev) => [
@@ -18,11 +18,11 @@ export function useCourseRegister() {
         ...createEmptyCourse(),
         courseCode: template.code,
         courseTitle: template.title,
-        creditUnit: template.creditUnit,
+        creditUnit: "0",
         isEditing: true,
       },
-    ])
-  }, [])
+    ]);
+  }, []);
 
   const updateCourse = useCallback(
     (id: string, updates: Partial<CourseRecord>) => {
@@ -30,24 +30,24 @@ export function useCourseRegister() {
         prev.map((course) =>
           course.id === id ? { ...course, ...updates } : course,
         ),
-      )
+      );
     },
     [],
-  )
+  );
 
   const deleteCourse = useCallback((id: string) => {
-    setCourses((prev) => prev.filter((course) => course.id !== id))
-  }, [])
+    setCourses((prev) => prev.filter((course) => course.id !== id));
+  }, []);
 
   const toggleEdit = useCallback((id: string, isEditing: boolean) => {
     setCourses((prev) =>
       prev.map((course) =>
         course.id === id ? { ...course, isEditing } : course,
       ),
-    )
-  }, [])
+    );
+  }, []);
 
-  const savedCourseCount = courses.filter((course) => !course.isEditing).length
+  const savedCourseCount = courses.filter((course) => !course.isEditing).length;
 
   return {
     courses,
@@ -57,5 +57,5 @@ export function useCourseRegister() {
     updateCourse,
     deleteCourse,
     toggleEdit,
-  }
+  };
 }

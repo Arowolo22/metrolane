@@ -223,8 +223,7 @@ export function RegisterForm() {
         ) : null}
         {isAdmin ? (
           <p className="text-xs text-orange-600">
-            Administrator passwords must include <strong>metrolane</strong> plus at least
-            one other letter (e.g. Str0ng!metrolaneX).
+            
           </p>
         ) : null}
         <PasswordStrength password={password} />
@@ -254,7 +253,7 @@ export function RegisterForm() {
             aria-invalid={Boolean(errors.acceptTerms)}
             {...register("acceptTerms")}
           />
-          <span>
+           <span>
             I confirm that I am a lecturer or authorized academic staff member
             and I agree to the{" "}
             <span className="font-medium text-gray-800">
@@ -262,7 +261,7 @@ export function RegisterForm() {
             </span>{" "}
             of the Lecturer Result Management System.
           </span>
-        </label>
+        </label> 
         {errors.acceptTerms ? (
           <p className="text-xs text-red-500" role="alert">
             {errors.acceptTerms.message}

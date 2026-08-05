@@ -1,30 +1,30 @@
-import type { ComponentType } from "react"
-import { useState } from "react"
-import { NavLink, useNavigate } from "react-router-dom"
+import type { ComponentType } from "react";
+import { useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   Calculator,
-  GraduationCap,
   HelpCircle,
   Loader2,
   LogOut,
   Settings,
   Users,
-} from "lucide-react"
-import { motion } from "framer-motion"
+} from "lucide-react";
+import logoImage from "@/assets/metrolane-logo.png";
+import { motion } from "framer-motion";
 
-import { Separator } from "@/components/ui/separator"
-import { useAuth } from "@/features/auth/context/useAuth"
-import { cn } from "@/lib/utils"
+import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/features/auth/context/useAuth";
+import { cn } from "@/lib/utils";
 
 const mainNavItems = [
   { to: "/calculator", label: "Calculator", icon: Calculator, end: true },
   { to: "/student-records", label: "Student Records", icon: Users },
   { to: "/settings", label: "Settings", icon: Settings },
-] as const
+] as const;
 
 const bottomNavItems = [
   { to: "/support", label: "Support", icon: HelpCircle },
-] as const
+] as const;
 
 function NavItem({
   to,
@@ -32,10 +32,10 @@ function NavItem({
   icon: Icon,
   end,
 }: {
-  to: string
-  label: string
-  icon: ComponentType<{ className?: string }>
-  end?: boolean
+  to: string;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  end?: boolean;
 }) {
   return (
     <NavLink to={to} end={end} className="block">
@@ -55,21 +55,21 @@ function NavItem({
         </motion.div>
       )}
     </NavLink>
-  )
+  );
 }
 
 function LogoutButton() {
-  const { logout } = useAuth()
-  const navigate = useNavigate()
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   async function handleLogout() {
-    setIsLoggingOut(true)
+    setIsLoggingOut(true);
     try {
-      await logout()
+      await logout();
     } finally {
-      setIsLoggingOut(false)
-      navigate("/login", { replace: true })
+      setIsLoggingOut(false);
+      navigate("/login", { replace: true });
     }
   }
 
@@ -87,15 +87,19 @@ function LogoutButton() {
       )}
       <span>Logout</span>
     </button>
-  )
+  );
 }
 
 export function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-gray-200 bg-white lg:flex">
       <div className="flex items-center gap-3 border-b border-gray-200 px-5 py-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500 text-white shadow-sm">
-          <GraduationCap className="h-5 w-5" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm">
+          <img
+            src={logoImage}
+            alt="Metrolane logo"
+            className="h-5 w-5 object-contain"
+          />
         </div>
         <div className="min-w-0">
           <p className="truncate text-xs font-semibold uppercase tracking-wide text-orange-500">
@@ -125,5 +129,5 @@ export function Sidebar() {
         </div>
       </nav>
     </aside>
-  )
+  );
 }

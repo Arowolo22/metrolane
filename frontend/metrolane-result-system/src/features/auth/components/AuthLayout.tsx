@@ -1,18 +1,18 @@
-import type { ReactNode } from "react"
-import { Outlet, useLocation } from "react-router-dom"
-import { AnimatePresence, motion } from "framer-motion"
-import { GraduationCap, ShieldCheck } from "lucide-react"
+import type { ReactNode } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 
-import { AuthFooter } from "@/features/auth/components/AuthFooter"
+import logoImage from "@/assets/metrolane-logo.png";
+import { AuthFooter } from "@/features/auth/components/AuthFooter";
 
 const panelVariants = {
   initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -8 },
-}
+};
 
 export function AuthLayout({ children }: { children?: ReactNode }) {
-  const { pathname } = useLocation()
+  const { pathname } = useLocation();
 
   return (
     <div className="flex min-h-screen flex-col bg-white lg:flex-row">
@@ -22,7 +22,11 @@ export function AuthLayout({ children }: { children?: ReactNode }) {
           <div className="space-y-6">
             <div className="flex items-center gap-3 text-white">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
-                <GraduationCap className="h-6 w-6" aria-hidden />
+                <img
+                  src={logoImage}
+                  alt="Metrolane logo"
+                  className="h-7 w-7 object-contain"
+                />
               </div>
               <div>
                 <p className="text-sm font-semibold uppercase tracking-wide">
@@ -45,14 +49,14 @@ export function AuthLayout({ children }: { children?: ReactNode }) {
             </div>
           </div>
 
-          <div className="flex items-start gap-3 rounded-xl border border-white/20 bg-white/10 p-4 text-sm text-orange-50 backdrop-blur-sm">
+          {/* <div className="flex items-start gap-3 rounded-xl border border-white/20 bg-white/10 p-4 text-sm text-orange-50 backdrop-blur-sm">
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
             <p>
               Enterprise-ready authentication UI prepared for backend
               integration, including session policies and optional two-factor
               authentication.
             </p>
-          </div>
+          </div> */}
         </div>
       </aside>
 
@@ -79,5 +83,5 @@ export function AuthLayout({ children }: { children?: ReactNode }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
