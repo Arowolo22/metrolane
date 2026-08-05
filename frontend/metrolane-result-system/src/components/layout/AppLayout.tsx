@@ -1,8 +1,11 @@
+import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
+import { OfflineBanner } from "@/components/states";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopNavigation } from "@/components/layout/TopNavigation";
-import { useState } from "react";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { queryClient } from "@/lib/queryClient";
 
 const pageTitles: Record<string, string> = {
   "/calculator": "Student Result Entry",
@@ -19,6 +22,7 @@ function getPageTitle(pathname: string): string {
 export function AppLayout() {
   const { pathname } = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const isOnline = useOnlineStatus();
 
   function handleMenuClick() {
     setIsSidebarOpen((s) => !s);
@@ -28,6 +32,12 @@ export function AppLayout() {
     setIsSidebarOpen(false);
   }
 
+  useEffect(() => {
+    if (isOnline) {
+      void queryClient.refetchQueries({ type: "active" });
+    }
+  }, [isOnline]);
+
   return (
     <div className="min-h-screen bg-white">
       <Sidebar isOpen={isSidebarOpen} onClose={handleCloseSidebar} />
@@ -36,6 +46,7 @@ export function AppLayout() {
           title={getPageTitle(pathname)}
           onMenuClick={handleMenuClick}
         />
+        <OfflineBanner onRetry={() => void queryClient.refetchQueries({ type: "active" })} />
         <main className="flex-1 overflow-y-auto bg-gray-50/30 p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
