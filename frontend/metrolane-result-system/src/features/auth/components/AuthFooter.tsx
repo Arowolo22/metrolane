@@ -1,5 +1,3 @@
-import { Shield } from "lucide-react"
-
 export function AuthFooter() {
   return (
     <footer className="space-y-3 border-t border-gray-100 pt-6 text-center lg:text-left">

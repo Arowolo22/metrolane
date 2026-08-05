@@ -1,5 +1,6 @@
 import type { SaveResultRecordPayload } from "@/features/result-sheet/types"
-import { apiClient, getApiErrorMessage, type ApiEnvelope } from "@/lib/api"
+import { apiClient, type ApiEnvelope } from "@/lib/api"
+import { ResilienceError } from "@/lib/apiErrors"
 
 export type SavedResultResponse = {
   id: string
@@ -14,19 +15,18 @@ export type SavedResultResponse = {
 export async function persistGeneratedResult(
   payload: SaveResultRecordPayload,
 ): Promise<SavedResultResponse> {
-  try {
-    const { data } = await apiClient.post<
-      ApiEnvelope<SavedResultResponse>
-    >("/results", payload)
+  const { data } = await apiClient.post<ApiEnvelope<SavedResultResponse>>(
+    "/results",
+    payload,
+  )
 
-    if (!data.success || !data.data) {
-      throw new Error(data.message ?? "Failed to save result")
-    }
-
-    return data.data
-  } catch (error) {
-    throw new Error(
-      getApiErrorMessage(error, "Failed to save result to the server."),
-    )
+  if (!data.success || !data.data) {
+    throw new ResilienceError({
+      kind: "unknown",
+      message: data.message ?? "Failed to save result to the server.",
+      retryable: true,
+    })
   }
+
+  return data.data
 }

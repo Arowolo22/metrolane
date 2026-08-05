@@ -5,7 +5,7 @@ import { AuthHeader } from "@/features/auth/components/AuthHeader"
 import { LoginForm } from "@/features/auth/components/LoginForm"
 
 type LoginLocationState = {
-  message?: string
+  message?: string | null
 }
 
 export function LoginPage() {

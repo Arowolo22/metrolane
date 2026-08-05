@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Loader2 } from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { Link, useNavigate } from "react-router-dom"
@@ -9,9 +8,12 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { InlineFieldError, LoadingSpinner } from "@/components/states"
 import { PasswordInput } from "@/features/auth/components/PasswordInput"
 import { useAuth } from "@/features/auth/context/useAuth"
 import { loginRequest } from "@/features/auth/services/authService"
+import { useFocusFirstError } from "@/hooks/useFocusFirstError"
+import { notifyError } from "@/lib/notifications"
 import {
   loginSchema,
   type LoginFormValues,
@@ -29,7 +31,7 @@ export function LoginForm({ successMessage }: LoginFormProps) {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, submitCount },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -39,14 +41,18 @@ export function LoginForm({ successMessage }: LoginFormProps) {
     },
   })
 
+  useFocusFirstError(errors, submitCount > 0)
+
   async function onSubmit(values: LoginFormValues) {
     setSubmitError(null)
     try {
       const result = await loginRequest(values)
       if (!result.success) {
         setSubmitError(result.message ?? "Unable to sign in. Please try again.")
+        notifyError(new Error(result.message ?? "Unable to sign in."))
         return
       }
+      sessionStorage.removeItem("metrolane.auth.sessionNotice")
       await refreshUser()
       navigate("/calculator", { replace: true })
     } catch {
@@ -76,13 +82,10 @@ export function LoginForm({ successMessage }: LoginFormProps) {
           autoComplete="email"
           placeholder="lecturer@metrolane.edu.ng"
           aria-invalid={Boolean(errors.email)}
+          aria-describedby={errors.email ? "email-error" : undefined}
           {...register("email")}
         />
-        {errors.email ? (
-          <p className="text-xs text-red-500" role="alert">
-            {errors.email.message}
-          </p>
-        ) : null}
+        <InlineFieldError id="email-error" message={errors.email?.message} />
       </div>
 
       <div className="space-y-2">
@@ -92,17 +95,14 @@ export function LoginForm({ successMessage }: LoginFormProps) {
           placeholder="Enter your password"
           autoComplete="current-password"
           aria-invalid={Boolean(errors.password)}
+          aria-describedby={errors.password ? "password-error" : undefined}
           {...register("password")}
         />
-        {errors.password ? (
-          <p className="text-xs text-red-500" role="alert">
-            {errors.password.message}
-          </p>
-        ) : null}
+        <InlineFieldError id="password-error" message={errors.password?.message} />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+        <label className="flex min-h-10 cursor-pointer items-center gap-2 text-sm text-gray-600">
           <Checkbox
             id="rememberMe"
             aria-describedby="rememberMe-hint"
@@ -115,28 +115,21 @@ export function LoginForm({ successMessage }: LoginFormProps) {
         </p>
         <Link
           to="/forgot-password"
-          className="text-sm font-medium text-orange-500 transition-colors hover:text-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 rounded-sm"
+          className="rounded-sm text-sm font-medium text-orange-500 transition-colors hover:text-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
         >
           Forgot password?
         </Link>
       </div>
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? (
-          <>
-            <Loader2 className="animate-spin" aria-hidden />
-            Signing in…
-          </>
-        ) : (
-          "Sign In"
-        )}
+        {isSubmitting ? <LoadingSpinner label="Signing in" /> : "Sign In"}
       </Button>
 
       <p className="text-center text-sm text-gray-500">
         Don&apos;t have an account?{" "}
         <Link
           to="/register"
-          className="font-medium text-orange-500 transition-colors hover:text-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 rounded-sm"
+          className="rounded-sm font-medium text-orange-500 transition-colors hover:text-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
         >
           Sign Up
         </Link>

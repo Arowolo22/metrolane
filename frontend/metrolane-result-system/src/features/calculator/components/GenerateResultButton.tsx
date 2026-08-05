@@ -26,10 +26,11 @@ export function GenerateResultButton({
       className="flex justify-end"
     >
       <Button
+        type="button"
         size="lg"
         disabled={disabled || isLoading}
         onClick={onGenerate}
-        className="min-w-[200px] shadow-md"
+        className="min-h-11 min-w-[200px] shadow-md"
       >
         {isLoading ? (
           <Loader2 className="h-5 w-5 animate-spin" />

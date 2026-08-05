@@ -3,10 +3,10 @@ import { FormProvider, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import { X } from "lucide-react"
-import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { ErrorState, SkeletonLoader } from "@/components/states"
 import { GPASummaryCard } from "@/features/calculator/components/GPASummaryCard"
 import { StudentInformationCard } from "@/features/calculator/components/StudentInformationCard"
 import { CourseAssessmentTable } from "@/features/calculator/components/CourseAssessmentTable"
@@ -22,11 +22,10 @@ import {
 } from "@/features/calculator/utils/validation"
 import { useResultGenerator } from "@/features/result-sheet/hooks/useResultGenerator"
 import { persistGeneratedResult } from "@/features/result-sheet/services/resultPersistence"
-import {
-  fetchResultById,
-  updateResultRecord,
-} from "@/features/student-records/services/studentRecordsService"
-import { getApiErrorMessage } from "@/lib/api"
+import { fetchResultById, updateResultRecord } from "@/features/student-records/services/studentRecordsService"
+import { classifyApiError, type ResilienceError } from "@/lib/apiErrors"
+import { notifyInfo } from "@/lib/notifications"
+import { useFocusFirstError } from "@/hooks/useFocusFirstError"
 
 interface StudentPrefill {
   studentName: string
@@ -47,30 +46,26 @@ export function CalculatorPage() {
     mode: "onChange",
   })
 
-  const {
-    courses,
-    savedCourseCount,
-    addCourseFromTemplate,
-    updateCourse,
-    deleteCourse,
-    toggleEdit,
-    loadCourses,
-  } = useCourseRegister()
-
+  const { courses, savedCourseCount, addCourseFromTemplate, updateCourse, deleteCourse, toggleEdit, loadCourses } = useCourseRegister()
   const [editStudentName, setEditStudentName] = useState<string | null>(null)
   const [isLoadingRecord, setIsLoadingRecord] = useState(false)
+  const [editLoadError, setEditLoadError] = useState<ResilienceError | null>(null)
+  const [editReloadKey, setEditReloadKey] = useState(0)
+  const [hasAttemptedGenerate, setHasAttemptedGenerate] = useState(false)
 
-  // Edit mode: fetch the full generated result and hydrate the form + course table.
+  useFocusFirstError(studentForm.formState.errors, hasAttemptedGenerate)
+
   useEffect(() => {
     if (!editId) return
     let cancelled = false
+    // The request lifecycle intentionally resets the view state before fetching.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoadingRecord(true)
+    setEditLoadError(null)
 
     fetchResultById(editId)
       .then((record) => {
         if (cancelled) return
-
         studentForm.reset({
           studentName: record.student.studentName,
           matricNumber: record.student.matricNumber,
@@ -84,26 +79,19 @@ export function CalculatorPage() {
           totalCreditUnits: record.student.totalCreditUnits ?? "",
           photoUrl: record.student.photoUrl,
         })
-
-        loadCourses(
-          record.courses.map((course) => ({
-            id: crypto.randomUUID(),
-            courseCode: course.courseCode,
-            courseTitle: course.courseTitle,
-            creditUnit: String(course.creditUnit),
-            continuousAssessment: String(course.continuousAssessment),
-            examinationScore: String(course.examinationScore),
-            isEditing: false,
-          })),
-        )
-
+        loadCourses(record.courses.map((course) => ({
+          id: crypto.randomUUID(),
+          courseCode: course.courseCode,
+          courseTitle: course.courseTitle,
+          creditUnit: String(course.creditUnit),
+          continuousAssessment: String(course.continuousAssessment),
+          examinationScore: String(course.examinationScore),
+          isEditing: false,
+        })))
         setEditStudentName(record.student.studentName)
       })
-      .catch((err) => {
-        if (cancelled) return
-        toast.error("Failed to load result for editing", {
-          description: getApiErrorMessage(err, "Please try again."),
-        })
+      .catch((error) => {
+        if (!cancelled) setEditLoadError(classifyApiError(error, "Failed to load result for editing."))
       })
       .finally(() => {
         if (!cancelled) setIsLoadingRecord(false)
@@ -113,13 +101,11 @@ export function CalculatorPage() {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editId])
+  }, [editId, editReloadKey])
 
-  // Quick-fill from the top navigation search: identity fields only, no courses.
   useEffect(() => {
     if (editId) return
-    const prefill = (location.state as { prefillStudent?: StudentPrefill } | null)
-      ?.prefillStudent
+    const prefill = (location.state as { prefillStudent?: StudentPrefill } | null)?.prefillStudent
     if (!prefill) return
 
     studentForm.reset({
@@ -129,23 +115,37 @@ export function CalculatorPage() {
       currentGpa: prefill.currentGpa ?? "",
       photoUrl: prefill.photoUrl,
     })
-
-    // Clear the navigation state so refreshing or navigating back doesn't reapply it.
     navigate(location.pathname, { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId, location.state])
 
   const { generateResult, isGenerating, validationErrors } = useResultGenerator({
-    onPersist: editId
-      ? (payload) => updateResultRecord(editId, payload)
-      : persistGeneratedResult,
+    onPersist: editId ? (payload) => updateResultRecord(editId, payload) : persistGeneratedResult,
   })
 
   const handleGenerateResult = async () => {
-    const success = await generateResult(studentForm.getValues(), courses)
-    if (success && editId) {
-      navigate(`/student-records/${editId}`)
+    setHasAttemptedGenerate(true)
+    const isValid = await studentForm.trigger(undefined, { shouldFocus: true })
+    if (!isValid) {
+      notifyInfo("Review the highlighted fields", "Complete the required student details before generating.")
+      return
     }
+
+    const success = await generateResult(studentForm.getValues(), courses)
+    if (success && editId) navigate(`/student-records/${editId}`)
+  }
+
+  if (editId && isLoadingRecord) {
+    return (
+      <div className="space-y-8">
+        <SkeletonLoader variant="form" />
+        <SkeletonLoader variant="table" rows={5} />
+      </div>
+    )
+  }
+
+  if (editId && editLoadError) {
+    return <ErrorState error={editLoadError} onRetry={() => setEditReloadKey((value) => value + 1)} onGoHome={() => navigate("/student-records")} />
   }
 
   return (
@@ -153,20 +153,8 @@ export function CalculatorPage() {
       {editId ? (
         <Alert className="border-orange-200 bg-orange-50">
           <AlertDescription className="flex flex-wrap items-center justify-between gap-3 text-orange-800">
-            <span>
-              {isLoadingRecord
-                ? "Loading result for editing…"
-                : `Editing result${editStudentName ? ` for ${editStudentName}` : ""}. Update the details below and generate the result again to save your changes.`}
-            </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/student-records")}
-            >
-              <X className="h-4 w-4" />
-              Cancel Edit
-            </Button>
+            <span>Editing result{editStudentName ? ` for ${editStudentName}` : ""}. Update the details below and generate the result again to save your changes.</span>
+            <Button type="button" variant="outline" size="sm" onClick={() => navigate("/student-records")}><X className="h-4 w-4" aria-hidden="true" />Cancel Edit</Button>
           </AlertDescription>
         </Alert>
       ) : null}
@@ -178,43 +166,12 @@ export function CalculatorPage() {
         </FormProvider>
       </section>
 
-      <section>
-        <CourseAssessmentTable
-          courses={courses}
-          onAddCourse={addCourseFromTemplate}
-          onUpdateCourse={updateCourse}
-          onDeleteCourse={deleteCourse}
-          onToggleEdit={toggleEdit}
-        />
-      </section>
+      <section><CourseAssessmentTable courses={courses} onAddCourse={addCourseFromTemplate} onUpdateCourse={updateCourse} onDeleteCourse={deleteCourse} onToggleEdit={toggleEdit} /></section>
 
       <section className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <CreditLoadCard courses={courses} />
-          <GradePointCard courses={courses} />
-          <SemesterGPACard courses={courses} />
-        </div>
-
-        {validationErrors.length > 0 && (
-          <Alert variant="destructive">
-            <AlertTitle>Please complete the following before generating</AlertTitle>
-            <AlertDescription>
-              <ul className="mt-2 list-disc space-y-1 pl-4">
-                {validationErrors.map((error) => (
-                  <li key={error}>{error}</li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <GenerateResultButton
-          disabled={savedCourseCount === 0 || isLoadingRecord}
-          isLoading={isGenerating}
-          onGenerate={handleGenerateResult}
-          label={editId ? "Update Result" : "Generate Result"}
-          loadingLabel={editId ? "Updating..." : "Generating..."}
-        />
+        <div className="grid gap-4 sm:grid-cols-3"><CreditLoadCard courses={courses} /><GradePointCard courses={courses} /><SemesterGPACard courses={courses} /></div>
+        {validationErrors.length > 0 ? <Alert variant="destructive"><AlertTitle>Please complete the following before generating</AlertTitle><AlertDescription><ul className="mt-2 list-disc space-y-1 pl-4">{validationErrors.map((error) => <li key={error}>{error}</li>)}</ul></AlertDescription></Alert> : null}
+        <GenerateResultButton disabled={savedCourseCount === 0} isLoading={isGenerating} onGenerate={handleGenerateResult} label={editId ? "Update Result" : "Generate Result"} loadingLabel={editId ? "Updating..." : "Generating..."} />
       </section>
     </div>
   )

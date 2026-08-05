@@ -19,9 +19,10 @@ export async function loginRequest(
   credentials: LoginCredentials,
 ): Promise<AuthResult> {
   try {
-    const { data } = await apiClient.post<
-      ApiEnvelope<AuthSession>
-    >("/auth/login", credentials)
+    const { data } = await apiClient.post<ApiEnvelope<AuthSession>>(
+      "/auth/login",
+      credentials,
+    )
 
     if (!data.success || !data.data) {
       return { success: false, message: data.message ?? "Unable to sign in." }
@@ -144,10 +145,7 @@ export async function logoutRequest(): Promise<void> {
 }
 
 export async function fetchCurrentUser(): Promise<AuthUser | null> {
-  try {
-    const { data } = await apiClient.get<ApiEnvelope<AuthUser>>("/auth/me")
-    return data.success && data.data ? data.data : null
-  } catch {
-    return null
-  }
+  const { data } = await apiClient.get<ApiEnvelope<AuthUser>>("/auth/me")
+  if (!data.success || !data.data) return null
+  return data.data
 }

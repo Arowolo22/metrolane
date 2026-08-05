@@ -1,7 +1,8 @@
-import axios, { type AxiosError } from "axios"
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios"
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ?? "http://localhost:5000/api"
+import { classifyApiError, getErrorMessage } from "@/lib/apiErrors"
+
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5000/api"
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -19,6 +20,9 @@ export type ApiEnvelope<T> = {
 
 const ACCESS_TOKEN_KEY = "metrolane.auth.accessToken"
 const REFRESH_TOKEN_KEY = "metrolane.auth.refreshToken"
+export const AUTH_EXPIRED_EVENT = "metrolane:auth-expired"
+
+let refreshPromise: Promise<string | null> | null = null
 
 export function getAccessToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY)
@@ -32,14 +36,46 @@ export function setAuthTokens(accessToken: string, refreshToken?: string): void 
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
   if (refreshToken) {
     localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
-  } else {
-    localStorage.removeItem(REFRESH_TOKEN_KEY)
   }
 }
 
 export function clearAuthTokens(): void {
   localStorage.removeItem(ACCESS_TOKEN_KEY)
   localStorage.removeItem(REFRESH_TOKEN_KEY)
+}
+
+export function notifyAuthExpired(): void {
+  clearAuthTokens()
+  window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT))
+}
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise
+
+  const refreshToken = getRefreshToken()
+  if (!refreshToken) return null
+
+  refreshPromise = axios
+    .post<ApiEnvelope<{ accessToken: string; refreshToken?: string }>>(
+      `${API_BASE_URL}/auth/refresh`,
+      { refreshToken },
+    )
+    .then(({ data }) => {
+      if (!data.success || !data.data?.accessToken) return null
+      setAuthTokens(data.data.accessToken, data.data.refreshToken)
+      return data.data.accessToken
+    })
+    .catch(() => null)
+    .finally(() => {
+      refreshPromise = null
+    })
+
+  return refreshPromise
+}
+
+function canRefreshRequest(config: InternalAxiosRequestConfig): boolean {
+  const url = config.url ?? ""
+  return !url.includes("/auth/login") && !url.includes("/auth/refresh")
 }
 
 apiClient.interceptors.request.use((config) => {
@@ -57,34 +93,23 @@ apiClient.interceptors.response.use(
     if (
       error.response?.status === 401 &&
       originalRequest &&
-      !originalRequest.url?.includes("/auth/login") &&
-      !originalRequest.url?.includes("/auth/refresh")
+      canRefreshRequest(originalRequest) &&
+      !originalRequest.headers?.["x-auth-retried"]
     ) {
-      const refreshToken = getRefreshToken()
-      if (refreshToken) {
-        try {
-          const { data } = await axios.post<ApiEnvelope<{
-            accessToken: string
-            refreshToken?: string
-          }>>(`${API_BASE_URL}/auth/refresh`, { refreshToken })
-
-          if (data.success && data.data?.accessToken) {
-            setAuthTokens(data.data.accessToken, data.data.refreshToken)
-            originalRequest.headers.Authorization = `Bearer ${data.data.accessToken}`
-            return apiClient(originalRequest)
-          }
-        } catch {
-          clearAuthTokens()
-        }
+      const nextAccessToken = await refreshAccessToken()
+      if (nextAccessToken) {
+        originalRequest.headers["x-auth-retried"] = "true"
+        originalRequest.headers.Authorization = `Bearer ${nextAccessToken}`
+        return apiClient(originalRequest)
       }
+
+      notifyAuthExpired()
     }
-    return Promise.reject(error)
+
+    return Promise.reject(classifyApiError(error))
   },
 )
 
 export function getApiErrorMessage(error: unknown, fallback: string): string {
-  if (axios.isAxiosError(error)) {
-    return error.response?.data?.message ?? fallback
-  }
-  return fallback
+  return getErrorMessage(error, fallback)
 }

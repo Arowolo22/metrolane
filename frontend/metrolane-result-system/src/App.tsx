@@ -12,6 +12,7 @@ import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage"
 import { ResetSuccessPage } from "@/features/auth/pages/ResetSuccessPage"
 import { StudentRecordDetailPage } from "@/features/student-records/pages/StudentRecordDetailPage"
 import { StudentRecordsPage } from "@/features/student-records/pages/StudentRecordsPage"
+import { StateLibraryShowcasePage } from "@/features/resilience/pages/StateLibraryShowcasePage"
 import { PlaceholderPage } from "@/pages/PlaceholderPage"
 
 function App() {
@@ -38,24 +39,8 @@ function App() {
                 path="/student-records/:id"
                 element={<StudentRecordDetailPage />}
               />
-              <Route
-                path="settings"
-                element={
-                  <PlaceholderPage
-                    title="Settings"
-                    description="System settings will be available here in a future release."
-                  />
-                }
-              />
-              <Route
-                path="support"
-                element={
-                  <PlaceholderPage
-                    title="Support"
-                    description="Contact support resources will be available here."
-                  />
-                }
-              />
+              <Route path="settings" element={<PlaceholderPage title="Settings" description="System settings will be available here in a future release." />} />
+              <Route path="support" element={<StateLibraryShowcasePage />} />
             </Route>
           </Route>
 
