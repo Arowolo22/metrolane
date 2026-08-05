@@ -7,12 +7,16 @@ interface GenerateResultButtonProps {
   disabled?: boolean
   isLoading?: boolean
   onGenerate: () => void
+  label?: string
+  loadingLabel?: string
 }
 
 export function GenerateResultButton({
   disabled = false,
   isLoading = false,
   onGenerate,
+  label = "Generate Result",
+  loadingLabel = "Generating...",
 }: GenerateResultButtonProps) {
   return (
     <motion.div
@@ -32,7 +36,7 @@ export function GenerateResultButton({
         ) : (
           <FileText className="h-5 w-5" />
         )}
-        {isLoading ? "Generating..." : "Generate Result"}
+        {isLoading ? loadingLabel : label}
       </Button>
     </motion.div>
   )

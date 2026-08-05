@@ -47,6 +47,10 @@ export function useCourseRegister() {
     );
   }, []);
 
+  const loadCourses = useCallback((records: CourseRecord[]) => {
+    setCourses(records);
+  }, []);
+
   const savedCourseCount = courses.filter((course) => !course.isEditing).length;
 
   return {
@@ -57,5 +61,6 @@ export function useCourseRegister() {
     updateCourse,
     deleteCourse,
     toggleEdit,
+    loadCourses,
   };
 }

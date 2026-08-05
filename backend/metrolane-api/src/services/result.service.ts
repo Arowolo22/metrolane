@@ -5,6 +5,7 @@ import {
   listResults,
   sumPreviousTotals,
   updateResultPdfUrl,
+  updateResultRow,
   updateResultStatusRow,
   type IResult,
   type ResultStatus,
@@ -64,20 +65,33 @@ function buildAcademicRemarks(gpa: number, cgpa: number | null): string {
   return `${standing}. Cumulative classification: ${classification}.`
 }
 
-export async function createResult(
-  input: CreateResultInput,
-  createdBy: string,
-): Promise<IResult> {
+function buildResultFields(input: CreateResultInput) {
   const normalizedCourses = input.courses.map(normalizeCourse)
   const computedCourses = computeCourseResults(normalizedCourses)
   const { gpa, totalCreditUnits, totalQualityPoints } = computeGpa(computedCourses)
 
   const matricNumber = input.student.matricNumber.trim().toUpperCase()
 
+  return {
+    matricNumber,
+    computedCourses,
+    gpa,
+    totalCreditUnits,
+    totalQualityPoints,
+  }
+}
+
+async function assertNoDuplicate(
+  matricNumber: string,
+  academicSession: string,
+  semester: string,
+  excludeResultId?: string,
+): Promise<void> {
   const duplicate = await findActiveResultByMatricSessionSemester(
     matricNumber,
-    input.student.academicSession,
-    input.student.semester,
+    academicSession,
+    semester,
+    excludeResultId,
   )
 
   if (duplicate) {
@@ -86,6 +100,16 @@ export async function createResult(
       409,
     )
   }
+}
+
+export async function createResult(
+  input: CreateResultInput,
+  createdBy: string,
+): Promise<IResult> {
+  const { matricNumber, computedCourses, gpa, totalCreditUnits, totalQualityPoints } =
+    buildResultFields(input)
+
+  await assertNoDuplicate(matricNumber, input.student.academicSession, input.student.semester)
 
   const { previousQualityPoints, previousCreditUnits } =
     await sumPreviousTotals(matricNumber)
@@ -123,6 +147,68 @@ export async function createResult(
     generatedAt: input.generatedAt,
     createdBy,
   })
+
+  return result
+}
+
+export async function updateResult(
+  id: string,
+  input: CreateResultInput,
+): Promise<IResult> {
+  const existing = await findResultById(id)
+  if (!existing) {
+    throw new AppError("Result not found", 404)
+  }
+
+  const { matricNumber, computedCourses, gpa, totalCreditUnits, totalQualityPoints } =
+    buildResultFields(input)
+
+  await assertNoDuplicate(
+    matricNumber,
+    input.student.academicSession,
+    input.student.semester,
+    id,
+  )
+
+  const { previousQualityPoints, previousCreditUnits } =
+    await sumPreviousTotals(matricNumber, id)
+
+  const cumulativeGpa = computeCgpa(
+    previousQualityPoints,
+    previousCreditUnits,
+    totalQualityPoints,
+    totalCreditUnits,
+  )
+
+  const degreeClassification =
+    cumulativeGpa !== null ? classifyCgpa(cumulativeGpa) : classifyCgpa(gpa)
+
+  const result = await updateResultRow(id, {
+    student: {
+      ...input.student,
+      matricNumber,
+      currentGpa: input.student.currentGpa,
+      totalCreditUnits: input.student.totalCreditUnits,
+    },
+    courses: computedCourses,
+    summary: {
+      totalCourses: computedCourses.length,
+      totalCreditUnits,
+      totalQualityPoints,
+      semesterGpa: gpa,
+      cumulativeGpa,
+      academicStanding: academicStandingFromGpa(gpa),
+      degreeClassification,
+      academicRemarks: buildAcademicRemarks(gpa, cumulativeGpa),
+    },
+    status: "Generated",
+    filename: input.filename,
+    generatedAt: input.generatedAt,
+  })
+
+  if (!result) {
+    throw new AppError("Result not found", 404)
+  }
 
   return result
 }

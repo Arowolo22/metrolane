@@ -1,4 +1,4 @@
-import { ArrowLeft, Loader2, Printer } from "lucide-react"
+import { ArrowLeft, Loader2, Pencil, Printer } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 
@@ -55,7 +55,6 @@ export function StudentRecordDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const isEditMode = searchParams.get("edit") === "1"
   const shouldPrint = searchParams.get("print") === "1"
 
   const [record, setRecord] = useState<ResultDetail | null>(null)
@@ -149,24 +148,29 @@ export function StudentRecordDetailPage() {
         </Button>
         <div className="flex flex-wrap items-center gap-3">
           <StatusBadge status={record.status} />
-          {isEditMode ? (
-            <Select
-              value={record.status}
-              disabled={isUpdatingStatus}
-              onValueChange={(value) => handleStatusChange(value as ResultStatus)}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : null}
+          <Select
+            value={record.status}
+            disabled={isUpdatingStatus}
+            onValueChange={(value) => handleStatusChange(value as ResultStatus)}
+          >
+            <SelectTrigger className="w-40 print:hidden">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/calculator?editId=${record.id}`)}
+          >
+            <Pencil className="h-4 w-4" />
+            Edit
+          </Button>
           <Button onClick={() => window.print()}>
             <Printer className="h-4 w-4" />
             Print

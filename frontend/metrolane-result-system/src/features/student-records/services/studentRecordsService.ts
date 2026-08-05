@@ -3,6 +3,7 @@ import type {
   ResultStatus,
   StudentRecord,
 } from "@/features/student-records/types"
+import type { SaveResultRecordPayload } from "@/features/result-sheet/types"
 import { apiClient, getApiErrorMessage, type ApiEnvelope } from "@/lib/api"
 
 export type StudentRecordsFilters = {
@@ -49,6 +50,26 @@ export async function updateResultStatus(
     return data.data
   } catch (error) {
     throw new Error(getApiErrorMessage(error, "Failed to update status."))
+  }
+}
+
+export async function updateResultRecord(
+  id: string,
+  payload: SaveResultRecordPayload,
+): Promise<ResultDetail> {
+  try {
+    const { data } = await apiClient.put<ApiEnvelope<ResultDetail>>(
+      `/results/${id}`,
+      payload,
+    )
+
+    if (!data.success || !data.data) {
+      throw new Error(data.message ?? "Failed to update result")
+    }
+
+    return data.data
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, "Failed to update result."), { cause: error })
   }
 }
 

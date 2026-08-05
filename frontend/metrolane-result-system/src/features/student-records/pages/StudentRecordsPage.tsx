@@ -160,7 +160,7 @@ export function StudentRecordsPage() {
                       <div className="flex justify-end">
                         <ActionButtons
                           onView={() => navigate(`/student-records/${record.id}`)}
-                          onEdit={() => navigate(`/student-records/${record.id}?edit=1`)}
+                          onEdit={() => navigate(`/calculator?editId=${record.id}`)}
                           onPrint={() => {
                             navigate(`/student-records/${record.id}?print=1`)
                             toast.info("Opening result for printing…")

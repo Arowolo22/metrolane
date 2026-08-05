@@ -8,6 +8,7 @@ import {
   formatStudentRecordListItem,
   getResultById,
   listStudentRecords,
+  updateResult,
   updateResultStatus,
 } from "../services/result.service.js"
 import { uploadResultPdf } from "../services/upload.service.js"
@@ -43,6 +44,32 @@ export async function createResultHandler(
     }
 
     res.status(201).json(ok(formatResultDetail(result), "Result saved successfully"))
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function updateResultHandler(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const body = createResultSchema.parse(req.body)
+    const result = await updateResult(getRouteParam(req.params.id), body)
+
+    if (body.pdfBase64) {
+      try {
+        const pdfBuffer = Buffer.from(body.pdfBase64, "base64")
+        const pdfUrl = await uploadResultPdf(pdfBuffer, body.filename)
+        await attachResultPdf(result.id, pdfUrl)
+        result.pdfUrl = pdfUrl
+      } catch (uploadError) {
+        console.warn("PDF upload skipped:", uploadError)
+      }
+    }
+
+    res.json(ok(formatResultDetail(result), "Result updated successfully"))
   } catch (error) {
     next(error)
   }

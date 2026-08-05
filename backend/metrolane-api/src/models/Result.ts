@@ -133,15 +133,21 @@ export async function findActiveResultByMatricSessionSemester(
   matricNumber: string,
   academicSession: string,
   semester: string,
+  excludeId?: string,
 ): Promise<IResult | null> {
-  const { data, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from(RESULTS_TABLE)
     .select("*")
     .eq("student->>matricNumber", matricNumber)
     .eq("student->>academicSession", academicSession)
     .eq("student->>semester", semester)
     .neq("status", "Rejected")
-    .maybeSingle()
+
+  if (excludeId) {
+    query = query.neq("id", excludeId)
+  }
+
+  const { data, error } = await query.maybeSingle()
 
   if (error) {
     throw formatSupabaseError(error, "Failed to check for duplicate result")
@@ -150,15 +156,24 @@ export async function findActiveResultByMatricSessionSemester(
   return data ? fromRow(data as ResultRow) : null
 }
 
-export async function sumPreviousTotals(matricNumber: string): Promise<{
+export async function sumPreviousTotals(
+  matricNumber: string,
+  excludeId?: string,
+): Promise<{
   previousQualityPoints: number
   previousCreditUnits: number
 }> {
-  const { data, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from(RESULTS_TABLE)
     .select("summary")
     .eq("student->>matricNumber", matricNumber)
     .neq("status", "Rejected")
+
+  if (excludeId) {
+    query = query.neq("id", excludeId)
+  }
+
+  const { data, error } = await query
 
   if (error) {
     throw formatSupabaseError(error, "Failed to compute previous totals")
@@ -188,6 +203,38 @@ export async function updateResultStatusRow(
 
   if (error) {
     throw formatSupabaseError(error, "Failed to update result status")
+  }
+
+  return data ? fromRow(data as ResultRow) : null
+}
+
+export async function updateResultRow(
+  id: string,
+  input: {
+    student: IStudentInfo
+    courses: ICourseResult[]
+    summary: IResultSummary
+    status: ResultStatus
+    filename: string
+    generatedAt: string
+  },
+): Promise<IResult | null> {
+  const { data, error } = await supabaseAdmin
+    .from(RESULTS_TABLE)
+    .update({
+      student: input.student,
+      courses: input.courses,
+      summary: input.summary,
+      status: input.status,
+      filename: input.filename,
+      generated_at: input.generatedAt,
+    })
+    .eq("id", id)
+    .select("*")
+    .maybeSingle()
+
+  if (error) {
+    throw formatSupabaseError(error, "Failed to update result")
   }
 
   return data ? fromRow(data as ResultRow) : null
