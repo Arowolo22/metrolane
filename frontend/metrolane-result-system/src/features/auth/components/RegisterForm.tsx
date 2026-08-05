@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 import { useState } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { Link, useNavigate } from "react-router-dom"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -43,7 +43,7 @@ export function RegisterForm() {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -60,9 +60,9 @@ export function RegisterForm() {
     },
   })
 
-  const password = watch("password")
-  const department = watch("department")
-  const role = watch("role")
+  const password = useWatch({ control, name: "password" })
+  const department = useWatch({ control, name: "department" })
+  const role = useWatch({ control, name: "role" })
   const isAdmin = role === "admin"
 
   async function onSubmit(values: RegisterFormValues) {

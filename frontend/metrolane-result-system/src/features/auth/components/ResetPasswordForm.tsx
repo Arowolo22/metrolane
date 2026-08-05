@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { CheckCircle2, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { motion } from "framer-motion"
 
@@ -26,7 +26,7 @@ export function ResetPasswordForm() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
@@ -36,7 +36,7 @@ export function ResetPasswordForm() {
     },
   })
 
-  const password = watch("password")
+  const password = useWatch({ control, name: "password" })
 
   useEffect(() => {
     if (!completed) {
