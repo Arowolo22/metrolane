@@ -10,9 +10,10 @@ async function bootstrap() {
   await connectRedis()
 
   const app = createApp()
+  const port = Number(process.env.PORT ?? env.PORT)
 
-  app.listen(env.PORT, () => {
-    console.log(`Metrolane API running on http://localhost:${env.PORT}`)
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`Metrolane API running on port ${port}`)
   })
 }
 

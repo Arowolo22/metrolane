@@ -11,7 +11,9 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default("7d"),
   REFRESH_TOKEN_EXPIRES_IN_DAYS: z.coerce.number().default(30),
   REDIS_URL: z.string().optional(),
-  FRONTEND_URL: z.string().default("http://localhost:5173"),
+  FRONTEND_URL: z
+    .string()
+    .default("http://localhost:5173,https://metrolane.vercel.app"),
   PASSWORD_RESET_EXPIRES_MINUTES: z.coerce.number().default(60),
 })
 
