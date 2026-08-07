@@ -10,10 +10,21 @@ import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { ok } from "./utils/apiResponse.js";
 
-function getAllowedOrigins() {
-  return env.FRONTEND_URL.split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+const DEFAULT_ALLOWED_ORIGINS = [
+  "http://localhost:5173",
+  "https://metrolane.vercel.app",
+] as const;
+
+function normalizeOrigin(origin: string): string {
+  return origin.trim().replace(/\/+$/, "");
+}
+
+function getAllowedOrigins(): Set<string> {
+  return new Set(
+    [...DEFAULT_ALLOWED_ORIGINS, ...env.FRONTEND_URL.split(",")]
+      .map(normalizeOrigin)
+      .filter(Boolean),
+  );
 }
 
 export function createApp() {
@@ -24,7 +35,7 @@ export function createApp() {
   app.use(
     cors({
       origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin || allowedOrigins.has(normalizeOrigin(origin))) {
           callback(null, true);
           return;
         }
