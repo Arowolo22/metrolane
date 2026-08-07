@@ -11,9 +11,7 @@ export const loginSchema = z.object({
 export const registerSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  department: z.string().min(1),
   email: z.string().email(),
-  phone: z.string().min(10),
   password: z
     .string()
     .min(8)
@@ -22,13 +20,11 @@ export const registerSchema = z.object({
     .regex(/[0-9]/)
     .regex(/[^A-Za-z0-9]/),
   confirmPassword: z.string().min(1),
-  acceptTerms: z.literal(true),
-  role: z.enum(["lecturer", "admin"]).default("lecturer"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
-}).refine((data) => data.role !== "admin" || hasMetrolanePepper(data.password), {
-  message: 'Administrator passwords must include "metrolane" plus at least one additional letter',
+}).refine((data) => hasMetrolanePepper(data.password), {
+  message: 'Administrator passwords must be included',
   path: ["password"],
 })
 

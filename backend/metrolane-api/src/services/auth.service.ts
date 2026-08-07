@@ -8,7 +8,6 @@ import {
   updateUserPasswordHash,
   verifyPassword,
   type IUser,
-  type UserRole,
 } from "../models/User.js"
 import { AppError } from "../middleware/errorHandler.js"
 import { hasMetrolanePepper } from "../utils/adminPassword.js"
@@ -53,18 +52,15 @@ function toAuthUser(user: IUser): AuthUserResponse {
 export async function registerUser(input: {
   firstName: string
   lastName: string
-  department: string
   email: string
-  phone: string
   password: string
-  role?: UserRole
 }): Promise<AuthUserResponse> {
   const existing = await findUserByEmail(input.email)
   if (existing) {
     throw new AppError("An account with this email already exists", 409)
   }
 
-  if (input.role === "admin" && !hasMetrolanePepper(input.password)) {
+  if (!hasMetrolanePepper(input.password)) {
     throw new AppError(
       'Administrator passwords must include "metrolane" plus at least one additional letter',
       400,
@@ -73,8 +69,13 @@ export async function registerUser(input: {
 
   const passwordHash = await hashPassword(input.password)
   const user = await createUser({
-    ...input,
+    firstName: input.firstName,
+    lastName: input.lastName,
+    department: "Administration",
+    email: input.email,
+    phone: "Not provided",
     passwordHash,
+    role: "admin",
   })
 
   return toAuthUser(user)
@@ -216,7 +217,7 @@ export async function resetPassword(input: {
 
   if (user.role === "admin" && !hasMetrolanePepper(input.password)) {
     throw new AppError(
-      'Administrator passwords must include "metrolane" plus at least one additional letter',
+      'Administrator passwords must be included',
       400,
     )
   }

@@ -38,26 +38,15 @@ export const registerSchema = z
   .object({
     firstName: z.string().min(1, "First name is required"),
     lastName: z.string().min(1, "Last name is required"),
-    department: z.string().min(1, "Department is required"),
     email: emailSchema,
-    phone: z
-      .string()
-      .min(1, "Phone number is required")
-      .regex(/^[\d\s+()-]{10,}$/, "Enter a valid phone number"),
     password: passwordRulesSchema,
     confirmPassword: z.string().min(1, "Please confirm your password"),
-    acceptTerms: z
-      .boolean()
-      .refine((value) => value === true, {
-        message: "You must accept the terms and conditions",
-      }),
-    role: z.enum(["lecturer", "admin"]),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
   })
-  .refine((data) => data.role !== "admin" || hasMetrolanePepper(data.password), {
+  .refine((data) => hasMetrolanePepper(data.password), {
     message:
       'Administrator passwords must include "metrolane" plus at least one additional letter',
     path: ["password"],
