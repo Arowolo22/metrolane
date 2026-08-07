@@ -133,8 +133,7 @@ export function RegisterForm() {
           </p>
         ) : null}
         <p className="text-xs text-orange-600">
-          Administrator passwords must include “metrolane” plus at least one
-          additional letter.
+         Administrator passwords must be included.
         </p>
         <PasswordStrength password={password} />
       </div>
