@@ -36,7 +36,8 @@ export function createApp() {
       allowedHeaders: ["Content-Type", "Authorization", "x-auth-retried"],
     }),
   );
-  app.options("*", cors());
+  // The application-level CORS middleware handles preflight requests for every route.
+  // Do not register `*` here: Express 5's path parser rejects the old wildcard syntax.
   app.use(express.json({ limit: "15mb" }));
   app.use(express.urlencoded({ extended: true }));
 
