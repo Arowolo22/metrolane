@@ -1,25 +1,29 @@
-import * as React from "react"
-import { Check } from "lucide-react"
+import * as React from "react";
+import { Check } from "lucide-react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
-export interface CheckboxProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
-  onCheckedChange?: (checked: boolean) => void
+export interface CheckboxProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  "type"
+> {
+  onCheckedChange?: (checked: boolean) => void;
 }
 
 const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
   ({ className, checked, onCheckedChange, onChange, ...props }, ref) => {
+    const isControlled = checked !== undefined;
+
     return (
       <span className="relative inline-flex">
         <input
           type="checkbox"
           ref={ref}
-          checked={checked}
+          checked={isControlled ? checked : undefined}
           className="peer sr-only"
           onChange={(event) => {
-            onChange?.(event)
-            onCheckedChange?.(event.target.checked)
+            onChange?.(event);
+            onCheckedChange?.(event.target.checked);
           }}
           {...props}
         />
@@ -36,9 +40,9 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
           <Check className="h-3 w-3 text-white opacity-0 transition-opacity" />
         </span>
       </span>
-    )
+    );
   },
-)
-Checkbox.displayName = "Checkbox"
+);
+Checkbox.displayName = "Checkbox";
 
-export { Checkbox }
+export { Checkbox };

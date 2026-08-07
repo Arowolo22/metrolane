@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from "zod";
 
 const envSchema = z.object({
   NODE_ENV: z
@@ -15,17 +15,20 @@ const envSchema = z.object({
     .string()
     .default("http://localhost:5173,https://metrolane.vercel.app"),
   PASSWORD_RESET_EXPIRES_MINUTES: z.coerce.number().default(60),
-})
+});
 
-export type Env = z.infer<typeof envSchema>
+export type Env = z.infer<typeof envSchema>;
 
 function loadEnv(): Env {
-  const parsed = envSchema.safeParse(process.env)
+  const parsed = envSchema.safeParse(process.env);
   if (!parsed.success) {
-    console.error("Invalid environment configuration:", parsed.error.flatten().fieldErrors)
-    process.exit(1)
+    console.error(
+      "Invalid environment configuration:",
+      parsed.error.flatten().fieldErrors,
+    );
+    process.exit(1);
   }
-  return parsed.data
+  return parsed.data;
 }
 
-export const env = loadEnv()
+export const env = loadEnv();

@@ -29,11 +29,14 @@ export function createApp() {
           return;
         }
 
-        callback(new Error(`Origin not allowed by CORS: ${origin}`));
+        callback(null, false);
       },
       credentials: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "x-auth-retried"],
     }),
   );
+  app.options("*", cors());
   app.use(express.json({ limit: "15mb" }));
   app.use(express.urlencoded({ extended: true }));
 

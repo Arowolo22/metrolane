@@ -1,28 +1,28 @@
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Loader2 } from "lucide-react"
-import { useState } from "react"
-import { useForm, useWatch } from "react-hook-form"
-import { Link, useNavigate } from "react-router-dom"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
 
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { PasswordInput } from "@/features/auth/components/PasswordInput"
-import { PasswordStrength } from "@/features/auth/components/PasswordStrength"
-import { registerRequest } from "@/features/auth/services/authService"
+} from "@/components/ui/select";
+import { PasswordInput } from "@/features/auth/components/PasswordInput";
+import { PasswordStrength } from "@/features/auth/components/PasswordStrength";
+import { registerRequest } from "@/features/auth/services/authService";
 import {
   registerSchema,
   type RegisterFormValues,
-} from "@/features/auth/utils/validation"
+} from "@/features/auth/utils/validation";
 
 const departmentOptions = [
   "Community Health",
@@ -33,11 +33,11 @@ const departmentOptions = [
   "Nursing Sciences",
   "Pharmaceutical Technology",
   "Academic Registry",
-] as const
+] as const;
 
 export function RegisterForm() {
-  const navigate = useNavigate()
-  const [submitError, setSubmitError] = useState<string | null>(null)
+  const navigate = useNavigate();
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
@@ -58,31 +58,32 @@ export function RegisterForm() {
       acceptTerms: false,
       role: "lecturer",
     },
-  })
+  });
 
-  const password = useWatch({ control, name: "password" })
-  const department = useWatch({ control, name: "department" })
-  const role = useWatch({ control, name: "role" })
-  const isAdmin = role === "admin"
+  const password = useWatch({ control, name: "password" });
+  const department = useWatch({ control, name: "department" });
+  const role = useWatch({ control, name: "role" });
+  const acceptTerms = useWatch({ control, name: "acceptTerms" });
+  const isAdmin = role === "admin";
 
   async function onSubmit(values: RegisterFormValues) {
-    setSubmitError(null)
+    setSubmitError(null);
     try {
-      const result = await registerRequest(values)
+      const result = await registerRequest(values);
       if (!result.success) {
         setSubmitError(
           result.message ?? "Unable to create account. Please try again.",
-        )
-        return
+        );
+        return;
       }
       navigate("/login", {
         replace: true,
         state: {
           message: "Account created successfully. Please sign in.",
         },
-      })
+      });
     } catch {
-      setSubmitError("Something went wrong. Please try again.")
+      setSubmitError("Something went wrong. Please try again.");
     }
   }
 
@@ -136,7 +137,10 @@ export function RegisterForm() {
             setValue("department", value, { shouldValidate: true })
           }
         >
-          <SelectTrigger id="department" aria-invalid={Boolean(errors.department)}>
+          <SelectTrigger
+            id="department"
+            aria-invalid={Boolean(errors.department)}
+          >
             <SelectValue placeholder="Select department" />
           </SelectTrigger>
           <SelectContent>
@@ -201,7 +205,10 @@ export function RegisterForm() {
             }
           />
           <span>
-            Register as a <span className="font-medium text-gray-800">System Administrator</span>{" "}
+            Register as a{" "}
+            <span className="font-medium text-gray-800">
+              System Administrator
+            </span>{" "}
             instead of a lecturer.
           </span>
         </label>
@@ -221,11 +228,7 @@ export function RegisterForm() {
             {errors.password.message}
           </p>
         ) : null}
-        {isAdmin ? (
-          <p className="text-xs text-orange-600">
-            
-          </p>
-        ) : null}
+        {isAdmin ? <p className="text-xs text-orange-600"></p> : null}
         <PasswordStrength password={password} />
       </div>
 
@@ -251,9 +254,14 @@ export function RegisterForm() {
             id="acceptTerms"
             className="mt-0.5"
             aria-invalid={Boolean(errors.acceptTerms)}
-            {...register("acceptTerms")}
+            checked={Boolean(acceptTerms)}
+            onCheckedChange={(checked) => {
+              setValue("acceptTerms", checked === true, {
+                shouldValidate: true,
+              });
+            }}
           />
-           <span>
+          <span>
             I confirm that I am a lecturer or authorized academic staff member
             and I agree to the{" "}
             <span className="font-medium text-gray-800">
@@ -261,7 +269,7 @@ export function RegisterForm() {
             </span>{" "}
             of the Lecturer Result Management System.
           </span>
-        </label> 
+        </label>
         {errors.acceptTerms ? (
           <p className="text-xs text-red-500" role="alert">
             {errors.acceptTerms.message}
@@ -290,5 +298,5 @@ export function RegisterForm() {
         </Link>
       </p>
     </form>
-  )
+  );
 }
