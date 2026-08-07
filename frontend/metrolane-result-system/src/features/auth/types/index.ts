@@ -7,13 +7,9 @@ export type LoginCredentials = {
 export type RegisterPayload = {
   firstName: string
   lastName: string
-  department: string
   email: string
-  phone: string
   password: string
   confirmPassword: string
-  acceptTerms: boolean
-  role?: "lecturer" | "admin"
 }
 
 export type ForgotPasswordPayload = {
