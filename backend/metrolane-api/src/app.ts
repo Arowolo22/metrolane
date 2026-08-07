@@ -41,6 +41,26 @@ export function createApp() {
   app.use(express.json({ limit: "15mb" }));
   app.use(express.urlencoded({ extended: true }));
 
+  app.get("/", (_req, res) => {
+    res.json(
+      ok({
+        service: "Metrolane API",
+        status: "ok",
+        health: "/api/health",
+      }),
+    );
+  });
+
+  app.get("/api", (_req, res) => {
+    res.json(
+      ok({
+        service: "Metrolane API",
+        status: "ok",
+        health: "/api/health",
+      }),
+    );
+  });
+
   app.get("/api/health", (_req, res) => {
     res.json(ok({ status: "ok", timestamp: new Date().toISOString() }));
   });
