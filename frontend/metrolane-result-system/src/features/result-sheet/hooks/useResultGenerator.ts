@@ -6,8 +6,13 @@ import { classifyApiError } from "@/lib/apiErrors"
 import { notifyError, notifySuccess } from "@/lib/notifications"
 
 import { downloadResultPdf, generateResultPdf } from "../services/generateResultPdf"
-import type { ResultPersistenceAdapter, SaveResultRecordPayload } from "../types"
-import { buildResultSummary, getSavedCourses } from "../utils/resultHelpers"
+import type { ResultPersistenceAdapter, ResultSheetSummary, SaveResultRecordPayload } from "../types"
+import {
+  buildResultFilename,
+  buildResultSummary,
+  getSavedCourses,
+  mapBackendSummaryToSheetSummary,
+} from "../utils/resultHelpers"
 import { validateResultGeneration } from "../utils/validation"
 
 interface UseResultGeneratorOptions {
@@ -33,10 +38,12 @@ export function useResultGenerator(options: UseResultGeneratorOptions = {}) {
 
       try {
         const savedCourses = getSavedCourses(courses)
-        const summary = buildResultSummary(savedCourses)
         const generatedAt = new Date()
-        const { blob, filename } = await generateResultPdf({ student, courses: savedCourses, summary, generatedAt })
-        downloadResultPdf(blob, filename)
+        const filename = buildResultFilename(
+          student.matricNumber,
+          student.studentName,
+          student.semester,
+        )
 
         const payload: SaveResultRecordPayload = {
           student,
@@ -49,7 +56,22 @@ export function useResultGenerator(options: UseResultGeneratorOptions = {}) {
           filename,
         }
 
-        if (onPersist) await onPersist(payload)
+        let summary: ResultSheetSummary
+        if (onPersist) {
+          const saved = await onPersist(payload)
+          summary = mapBackendSummaryToSheetSummary(saved.summary)
+        } else {
+          summary = buildResultSummary(savedCourses)
+        }
+
+        const { blob } = await generateResultPdf({
+          student,
+          courses: savedCourses,
+          summary,
+          generatedAt,
+        })
+        downloadResultPdf(blob, filename)
+
         notifySuccess("Result generated and downloaded successfully.")
         return true
       } catch (error) {

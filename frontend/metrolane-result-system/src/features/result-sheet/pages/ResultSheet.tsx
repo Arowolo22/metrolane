@@ -30,7 +30,7 @@ export function ResultSheet({
       <StudentInformationCard student={student} generatedAt={generatedAt} />
       <AcademicRecordTable courses={courses} />
       <SemesterSummary summary={summary} />
-      <CGPASummary summary={summary} />
+      <CGPASummary summary={summary} semester={student.semester} />
       <AcademicRemarks remarks={summary.academicRemarks} />
       <SignatureSection />
       <Footer generatedAt={generatedAt} />

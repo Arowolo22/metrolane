@@ -51,6 +51,45 @@ export function getCoursePerformance(course: Pick<CourseRecord, "creditUnit" | "
   }
 }
 
+export type BackendResultSummary = {
+  totalCourses: number
+  totalCreditUnits: number
+  totalQualityPoints: number
+  semesterGpa: number
+  firstSemesterGpa: number | null
+  cumulativeGpa: number | null
+  academicStanding: string
+  degreeClassification: string
+  academicRemarks: string
+}
+
+export function mapBackendSummaryToSheetSummary(
+  summary: BackendResultSummary,
+): ResultSheetSummary {
+  return {
+    totalCourses: summary.totalCourses,
+    totalCreditUnits: summary.totalCreditUnits,
+    totalGradePoints: summary.totalQualityPoints.toFixed(2),
+    semesterGpa: summary.semesterGpa.toFixed(2),
+    firstSemesterGpa:
+      summary.firstSemesterGpa !== null
+        ? summary.firstSemesterGpa.toFixed(2)
+        : null,
+    cumulativeGpa: (summary.cumulativeGpa ?? summary.semesterGpa).toFixed(2),
+    academicStanding: summary.academicStanding,
+    degreeClassification: summary.degreeClassification,
+    academicRemarks: summary.academicRemarks,
+  }
+}
+
+function classifyNbte(gpa: number): string {
+  if (gpa >= 3.5) return "Distinction"
+  if (gpa >= 3.0) return "Upper Credit"
+  if (gpa >= 2.5) return "Lower Credit"
+  if (gpa >= 2.0) return "Pass"
+  return "Fail"
+}
+
 export function buildResultSummary(courses: CourseRecord[]): ResultSheetSummary {
   const totalCreditUnits = courses.reduce((sum, course) => {
     const units = Number(course.creditUnit)
@@ -63,50 +102,18 @@ export function buildResultSummary(courses: CourseRecord[]): ResultSheetSummary 
   }, 0)
 
   const semesterGpa = totalCreditUnits > 0 ? totalGradePoints / totalCreditUnits : 0
-
-  const cumulativeGpa = semesterGpa
-  const degreeClassification =
-    semesterGpa >= 4.5
-      ? "First Class"
-      : semesterGpa >= 3.5
-        ? "Second Class Upper"
-        : semesterGpa >= 2.5
-          ? "Second Class Lower"
-          : semesterGpa >= 1.5
-            ? "Third Class"
-            : "Pass"
-
-  const academicStanding =
-    semesterGpa >= 4.5
-      ? "Excellent"
-      : semesterGpa >= 3.5
-        ? "Very Good"
-        : semesterGpa >= 2.5
-          ? "Good"
-          : semesterGpa >= 1.5
-            ? "Fair"
-            : "Needs Improvement"
-
-  const academicRemarks =
-    semesterGpa >= 4.5
-      ? "Outstanding performance. Keep the momentum."
-      : semesterGpa >= 3.5
-        ? "Excellent academic progress."
-        : semesterGpa >= 2.5
-          ? "Good performance overall."
-          : semesterGpa >= 1.5
-            ? "You can improve with more consistency."
-            : "More effort is needed to improve performance."
+  const classification = classifyNbte(semesterGpa)
 
   return {
     totalCourses: courses.length,
     totalCreditUnits,
     totalGradePoints: totalGradePoints.toFixed(2),
     semesterGpa: semesterGpa.toFixed(2),
-    cumulativeGpa: cumulativeGpa.toFixed(2),
-    academicStanding,
-    degreeClassification,
-    academicRemarks,
+    firstSemesterGpa: null,
+    cumulativeGpa: semesterGpa.toFixed(2),
+    academicStanding: classification,
+    degreeClassification: classification,
+    academicRemarks: `${classification}. Semester result on record.`,
   }
 }
 

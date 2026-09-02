@@ -12,6 +12,7 @@ export interface ResultSheetSummary {
   totalCreditUnits: number
   totalGradePoints: string
   semesterGpa: string
+  firstSemesterGpa: string | null
   cumulativeGpa: string
   academicStanding: string
   degreeClassification: string
@@ -32,4 +33,4 @@ export interface SaveResultRecordPayload {
 
 export type ResultPersistenceAdapter = (
   payload: SaveResultRecordPayload,
-) => Promise<unknown>
+) => Promise<{ summary: import("@/features/result-sheet/utils/resultHelpers").BackendResultSummary }>

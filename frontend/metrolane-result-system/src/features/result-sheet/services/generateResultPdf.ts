@@ -281,32 +281,50 @@ export async function generateResultPdf({
     cursorY += 34;
     cursorY = drawSectionTitle(doc, "CGPA Summary", cursorY);
 
-    const cardWidth = 56;
-    const cardHeight = 18;
-    const cardGap = 6;
-    const cardStartX = 10;
+    const isSecondSemester = student.semester.toLowerCase().includes("second");
 
-    const cards = [
-      {
-        title: "Semester GPA",
-        value: summary.semesterGpa,
-        fill: WHITE as [number, number, number],
-        text: DARK_GRAY,
-      },
-      {
-        title: "Cumulative GPA (CGPA)",
-        value: summary.cumulativeGpa,
-        fill: WHITE as [number, number, number],
-        text: DARK_GRAY,
-        sub: `Academic Standing: ${summary.academicStanding}`,
-      },
-      {
-        title: "Degree Classification",
-        value: summary.degreeClassification,
-        fill: ORANGE,
-        text: WHITE,
-      },
-    ];
+    type CgpaCard = {
+      title: string;
+      value: string;
+      fill: [number, number, number];
+      sub?: string;
+    };
+
+    const cards: CgpaCard[] = [];
+
+    if (summary.firstSemesterGpa) {
+      cards.push({
+        title: "First Semester GPA",
+        value: summary.firstSemesterGpa,
+        fill: WHITE,
+      });
+    }
+
+    cards.push({
+      title: isSecondSemester ? "Second Semester GPA" : "First Semester GPA",
+      value: summary.semesterGpa,
+      fill: WHITE,
+    });
+
+    cards.push({
+      title: "Cumulative GPA (CGPA)",
+      value: summary.cumulativeGpa,
+      fill: WHITE,
+      sub: summary.firstSemesterGpa
+        ? `(${summary.firstSemesterGpa} + ${summary.semesterGpa}) / 2`
+        : `Academic Standing: ${summary.academicStanding}`,
+    });
+
+    cards.push({
+      title: "Degree Classification",
+      value: summary.degreeClassification,
+      fill: ORANGE,
+    });
+
+    const cardWidth = cards.length > 3 ? 44 : 56;
+    const cardHeight = 18;
+    const cardGap = 4;
+    const cardStartX = 10;
 
     cards.forEach((card, index) => {
       const x = cardStartX + index * (cardWidth + cardGap);

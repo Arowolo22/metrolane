@@ -327,6 +327,7 @@ export function formatStudentRecordListItem(result: IResult) {
     semester: result.student.semester,
     gpa: result.summary.semesterGpa,
     cgpa: result.summary.cumulativeGpa,
+    firstSemesterGpa: result.summary.firstSemesterGpa,
     status: result.status,
     results: result.courses.map((course) => ({
       courseCode: course.courseCode,
