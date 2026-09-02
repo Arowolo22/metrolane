@@ -82,7 +82,7 @@ export function mapBackendSummaryToSheetSummary(
   }
 }
 
-function classifyNbte(gpa: number): string {
+export function classifyNbte(gpa: number): string {
   if (gpa >= 3.5) return "Distinction"
   if (gpa >= 3.0) return "Upper Credit"
   if (gpa >= 2.5) return "Lower Credit"

@@ -49,6 +49,7 @@ export interface ResultDetailSummary {
   totalCreditUnits: number
   totalQualityPoints: number
   semesterGpa: number
+  firstSemesterGpa: number | null
   cumulativeGpa: number | null
   academicStanding: string
   degreeClassification: string

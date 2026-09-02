@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { useFormContext } from "react-hook-form"
 
 import { InlineFieldError } from "@/components/states"
@@ -11,6 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import type { StudentInformationFormValues } from "@/features/calculator/utils/validation"
+import { lookupStudentForCalculator } from "@/features/student-records/services/studentRecordsService"
+import { classifyApiError } from "@/lib/apiErrors"
+import { notifyError, notifySuccess } from "@/lib/notifications"
 
 const departmentOptions = [
   "Department of Community Health Technology",
@@ -30,16 +34,69 @@ export function StudentInformationForm() {
     watch,
     formState: { errors },
   } = useFormContext<StudentInformationFormValues>()
+  const [isLookingUp, setIsLookingUp] = useState(false)
 
   const department = watch("department")
   const level = watch("level")
   const semester = watch("semester")
 
+  async function lookupByName() {
+    const studentName = watch("studentName")?.trim()
+    if (!studentName || isLookingUp) return
+
+    setIsLookingUp(true)
+    try {
+      const prefill = await lookupStudentForCalculator(studentName)
+      setValue("studentName", prefill.studentName, { shouldValidate: true, shouldDirty: true })
+      setValue("matricNumber", prefill.matricNumber, { shouldValidate: true, shouldDirty: true })
+      setValue("department", prefill.department, { shouldValidate: true, shouldDirty: true })
+      setValue("faculty", prefill.faculty ?? "", { shouldDirty: true })
+      setValue("programme", prefill.programme ?? "", { shouldDirty: true })
+      setValue("level", prefill.level, { shouldValidate: true, shouldDirty: true })
+      setValue("academicSession", prefill.academicSession, { shouldValidate: true, shouldDirty: true })
+      setValue("currentGpa", prefill.currentGpa, { shouldValidate: true, shouldDirty: true })
+      setValue("totalCreditUnits", prefill.totalCreditUnits, { shouldValidate: true, shouldDirty: true })
+      if (prefill.photoUrl) {
+        setValue("photoUrl", prefill.photoUrl, { shouldDirty: true })
+      }
+      if (!semester) {
+        setValue("semester", prefill.semester ?? "Second Semester", {
+          shouldValidate: true,
+          shouldDirty: true,
+        })
+      }
+      notifySuccess(`Loaded first semester GPA ${prefill.currentGpa} for ${prefill.studentName}.`)
+    } catch (error) {
+      notifyError(
+        classifyApiError(error, "No saved first semester result was found for that name."),
+        "Student lookup failed.",
+      )
+    } finally {
+      setIsLookingUp(false)
+    }
+  }
+
   return (
     <div className="grid flex-1 gap-4 sm:grid-cols-2">
       <div className="space-y-2 sm:col-span-2">
         <Label htmlFor="studentName">Student Name</Label>
-        <Input id="studentName" placeholder="Enter student full name" aria-invalid={Boolean(errors.studentName)} aria-describedby={errors.studentName ? "studentName-error" : undefined} {...register("studentName")} />
+        <Input
+          id="studentName"
+          placeholder="Type the student name and press Enter to load Current GPA"
+          aria-invalid={Boolean(errors.studentName)}
+          aria-describedby={errors.studentName ? "studentName-error" : undefined}
+          {...register("studentName")}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return
+            event.preventDefault()
+            void lookupByName()
+          }}
+        />
+        <p className="text-xs text-gray-500">
+          {isLookingUp
+            ? "Looking up first semester GPA…"
+            : "Press Enter after typing the name to fetch the saved Current GPA."}
+        </p>
         <InlineFieldError id="studentName-error" message={errors.studentName?.message} />
       </div>
 

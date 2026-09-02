@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { AcademicRemarks } from "@/features/result-sheet/components/AcademicRemarks"
+import { CGPASummary } from "@/features/result-sheet/components/CGPASummary"
 import { Footer } from "@/features/result-sheet/components/Footer"
 import { InstitutionHeader } from "@/features/result-sheet/components/InstitutionHeader"
 import { SemesterSummary } from "@/features/result-sheet/components/SemesterSummary"
@@ -31,21 +32,29 @@ import { StatusBadge } from "@/features/student-records/components/StatusBadge"
 import { useStudentRecordQuery, studentRecordQueryKey } from "@/features/student-records/hooks/useStudentRecordQuery"
 import { updateResultStatus } from "@/features/student-records/services/studentRecordsService"
 import type { ResultDetail, ResultStatus } from "@/features/student-records/types"
-import { classifyApiError, ResilienceError } from "@/lib/apiErrors"
+import { classifyNbte } from "@/features/result-sheet/utils/resultHelpers"
 import { notifyError, notifySuccess } from "@/lib/notifications"
 import { queryClient } from "@/lib/queryClient"
 
 const statusOptions: ResultStatus[] = ["Generated", "Pending", "Approved", "Rejected"]
 
 function toResultSheetSummary(summary: ResultDetail["summary"]): ResultSheetSummary {
+  const firstSemesterGpa =
+    summary.firstSemesterGpa !== null && summary.firstSemesterGpa !== undefined
+      ? summary.firstSemesterGpa.toFixed(2)
+      : null
+  const cumulativeGpa = summary.cumulativeGpa ?? summary.semesterGpa
+  const classification = classifyNbte(cumulativeGpa)
+
   return {
     totalCourses: summary.totalCourses,
     totalCreditUnits: summary.totalCreditUnits,
     totalGradePoints: summary.totalQualityPoints.toFixed(2),
     semesterGpa: summary.semesterGpa.toFixed(2),
-    cumulativeGpa: summary.cumulativeGpa !== null ? summary.cumulativeGpa.toFixed(2) : "—",
-    academicStanding: summary.academicStanding,
-    degreeClassification: summary.degreeClassification,
+    firstSemesterGpa,
+    cumulativeGpa: cumulativeGpa.toFixed(2),
+    academicStanding: classification,
+    degreeClassification: classification,
     academicRemarks: summary.academicRemarks,
   }
 }
@@ -180,15 +189,7 @@ export function StudentRecordDetailPage() {
         </section>
 
         <SemesterSummary summary={summary} />
-
-        <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">CGPA Summary</h2>
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"><p className="text-xs font-medium uppercase tracking-wide text-gray-500">Semester GPA</p><p className="mt-2 text-3xl font-bold text-orange-500">{summary.semesterGpa}</p></div>
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"><p className="text-xs font-medium uppercase tracking-wide text-gray-500">Cumulative GPA (CGPA)</p><p className="mt-2 text-3xl font-bold text-gray-900">{summary.cumulativeGpa}</p><p className="mt-3 inline-flex rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-600">Academic Standing: {summary.academicStanding}</p></div>
-            <div className="rounded-xl bg-orange-500 p-5 text-white shadow-md"><p className="text-xs font-medium uppercase tracking-wide text-orange-100">Degree Classification</p><p className="mt-2 text-xl font-bold leading-tight">{summary.degreeClassification}</p></div>
-          </div>
-        </section>
+        <CGPASummary summary={summary} semester={record.student.semester} />
 
         <AcademicRemarks remarks={summary.academicRemarks} />
         <SignatureSection />

@@ -30,8 +30,15 @@ import { useFocusFirstError } from "@/hooks/useFocusFirstError"
 interface StudentPrefill {
   studentName: string
   matricNumber: string
+  department?: string
+  faculty?: string
+  programme?: string
+  level?: string
+  academicSession?: string
   currentGpa?: string
+  totalCreditUnits?: string
   photoUrl?: string
+  semester?: string
 }
 
 export function CalculatorPage() {
@@ -112,8 +119,15 @@ export function CalculatorPage() {
       ...EMPTY_STUDENT_INFORMATION,
       studentName: prefill.studentName,
       matricNumber: prefill.matricNumber,
+      department: prefill.department ?? "",
+      faculty: prefill.faculty ?? "",
+      programme: prefill.programme ?? "",
+      level: prefill.level ?? "",
+      academicSession: prefill.academicSession ?? "",
       currentGpa: prefill.currentGpa ?? "",
+      totalCreditUnits: prefill.totalCreditUnits ?? "",
       photoUrl: prefill.photoUrl,
+      semester: prefill.semester ?? "Second Semester",
     })
     navigate(location.pathname, { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps

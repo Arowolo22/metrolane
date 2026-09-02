@@ -37,6 +37,9 @@ export function GPASummaryCard() {
               className="border-orange-300/50 bg-white text-gray-900"
               placeholder="0.00"
             />
+            <p className="text-xs text-orange-100">
+              Search the student name and press Enter to fill this from first semester.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="totalCreditUnits" className="text-sm font-medium text-orange-100">

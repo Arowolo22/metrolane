@@ -14,8 +14,8 @@ export const studentInformationSchema = z.object({
     .min(1, "Current GPA is required")
     .refine((value) => {
       const parsed = Number(value)
-      return !Number.isNaN(parsed) && parsed >= 0 && parsed <= 5
-    }, { message: "Current GPA must be between 0 and 5" }),
+      return !Number.isNaN(parsed) && parsed >= 0 && parsed <= 4
+    }, { message: "Current GPA must be between 0 and 4.00" }),
   totalCreditUnits: z
     .string()
     .min(1, "Total credit units is required")

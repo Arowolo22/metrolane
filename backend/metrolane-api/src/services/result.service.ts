@@ -78,12 +78,19 @@ function buildAcademicRemarks(
   )
 }
 
+function parseOptionalGpa(value: string | number | undefined): number | null {
+  if (value === undefined || value === "") return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 async function buildSessionSummary(
   matricNumber: string,
   academicSession: string,
   level: string,
   semester: string,
   semesterGpa: number,
+  enteredCurrentGpa?: string | number,
   excludeResultId?: string,
 ) {
   const previousResults = await findSessionSemesterResults(
@@ -93,15 +100,18 @@ async function buildSessionSummary(
     excludeResultId,
   )
 
+  const isSecondSemester = semester.toLowerCase().includes("second")
   const firstSemesterRecord = previousResults.find((result) =>
     result.semester.toLowerCase().includes("first"),
   )
-  const firstSemesterGpa = firstSemesterRecord?.semesterGpa ?? null
 
-  const semesterGpas = [
-    ...previousResults.map((result) => result.semesterGpa),
-    semesterGpa,
-  ]
+  const firstSemesterGpa =
+    firstSemesterRecord?.semesterGpa ??
+    (isSecondSemester ? parseOptionalGpa(enteredCurrentGpa) : null)
+
+  const semesterGpas = isSecondSemester && firstSemesterGpa !== null
+    ? [firstSemesterGpa, semesterGpa]
+    : [...previousResults.map((result) => result.semesterGpa), semesterGpa]
 
   const cumulativeGpa = computeCgpaFromSemesterGpas(semesterGpas)
   const degreeClassification = classifyCgpa(cumulativeGpa ?? semesterGpa)
@@ -110,7 +120,7 @@ async function buildSessionSummary(
     firstSemesterGpa,
     cumulativeGpa,
     degreeClassification,
-    academicStanding: classifyCgpa(semesterGpa),
+    academicStanding: classifyCgpa(cumulativeGpa ?? semesterGpa),
     academicRemarks: buildAcademicRemarks(
       semesterGpa,
       firstSemesterGpa,
@@ -172,6 +182,7 @@ export async function createResult(
     input.student.level,
     input.student.semester,
     gpa,
+    input.student.currentGpa,
   )
 
   const result = await insertResult({
@@ -227,6 +238,7 @@ export async function updateResult(
     input.student.level,
     input.student.semester,
     gpa,
+    input.student.currentGpa,
     id,
   )
 

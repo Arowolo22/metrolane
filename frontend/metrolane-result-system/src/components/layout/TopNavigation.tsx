@@ -7,7 +7,7 @@ import { RetryButton } from "@/components/states"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/features/auth/context/useAuth"
 import { useStudentRecordsQuery } from "@/features/student-records/hooks/useStudentRecordsQuery"
-import { fetchResultById } from "@/features/student-records/services/studentRecordsService"
+import { lookupStudentForCalculator } from "@/features/student-records/services/studentRecordsService"
 import type { StudentRecord } from "@/features/student-records/types"
 import { classifyApiError, type ResilienceError } from "@/lib/apiErrors"
 import { notifyError } from "@/lib/notifications"
@@ -53,17 +53,14 @@ export function TopNavigation({ title, onMenuClick }: TopNavigationProps) {
     setIsSelecting(true)
     setSelectionError(null)
     try {
-      const detail = await fetchResultById(record.id)
+      const prefill = await lookupStudentForCalculator(
+        record.matricNumber || record.studentName,
+      )
       setIsOpen(false)
       setQuery("")
       navigate("/calculator", {
         state: {
-          prefillStudent: {
-            studentName: detail.student.studentName,
-            matricNumber: detail.student.matricNumber,
-            currentGpa: detail.student.currentGpa,
-            photoUrl: detail.student.photoUrl,
-          },
+          prefillStudent: prefill,
         },
       })
     } catch (error) {
@@ -102,7 +99,16 @@ export function TopNavigation({ title, onMenuClick }: TopNavigationProps) {
               onFocus={() => {
                 if (query.trim().length >= 2) setIsOpen(true)
               }}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return
+                event.preventDefault()
+                const firstResult = results[0]
+                if (firstResult && !isSelecting) {
+                  void handleSelectStudent(firstResult)
+                }
+              }}
               placeholder="Search student by name or matric number..."
+              role="combobox"
               role="combobox"
               aria-label="Search students"
               aria-expanded={isOpen}

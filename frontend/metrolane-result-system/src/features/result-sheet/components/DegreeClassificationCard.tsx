@@ -13,11 +13,11 @@ export function DegreeClassificationCard({
         <Star className="h-4 w-4" />
       </div>
       <p className="text-xs font-medium uppercase tracking-wide text-orange-100">
-        Degree Classification
+        Diploma Classification
       </p>
       <p className="mt-2 text-xl font-bold leading-tight">{classification}</p>
-      <p className="mt-3 text-xs italic text-orange-100">
-        Classification will be calculated when backend logic is connected.
+      <p className="mt-3 text-xs text-orange-100">
+        Distinction · Upper Credit · Lower Credit · Pass · Fail
       </p>
     </div>
   )
