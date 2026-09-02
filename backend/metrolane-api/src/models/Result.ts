@@ -33,6 +33,7 @@ export interface IResultSummary {
   totalCreditUnits: number
   totalQualityPoints: number
   semesterGpa: number
+  firstSemesterGpa: number | null
   cumulativeGpa: number | null
   academicStanding: string
   degreeClassification: string
@@ -156,6 +157,47 @@ export async function findActiveResultByMatricSessionSemester(
   return data ? fromRow(data as ResultRow) : null
 }
 
+export async function findSessionSemesterResults(
+  matricNumber: string,
+  academicSession: string,
+  level: string,
+  excludeId?: string,
+): Promise<Array<{ semester: string; semesterGpa: number }>> {
+  let query = supabaseAdmin
+    .from(RESULTS_TABLE)
+    .select("student, summary")
+    .eq("student->>matricNumber", matricNumber)
+    .eq("student->>academicSession", academicSession)
+    .eq("student->>level", level)
+    .neq("status", "Rejected")
+
+  if (excludeId) {
+    query = query.neq("id", excludeId)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    throw formatSupabaseError(error, "Failed to load previous semester results")
+  }
+
+  return (data ?? [])
+    .map((row) => {
+      const student = row.student as IStudentInfo
+      const summary = row.summary as IResultSummary
+      return {
+        semester: student.semester,
+        semesterGpa: summary.semesterGpa,
+      }
+    })
+    .sort((a, b) => {
+      const order = (semester: string) =>
+        semester.toLowerCase().includes("first") ? 0 : 1
+      return order(a.semester) - order(b.semester)
+    })
+}
+
+/** @deprecated Prefer findSessionSemesterResults for cumulative GPA */
 export async function sumPreviousTotals(
   matricNumber: string,
   excludeId?: string,

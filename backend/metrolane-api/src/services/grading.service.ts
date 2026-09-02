@@ -3,7 +3,37 @@ export type GradeInfo = {
   gradePoint: number
 }
 
-/** NBTE 4.0 grading scale for ND/HND programmes */
+export type DiplomaClassification =
+  | "Distinction"
+  | "Upper Credit"
+  | "Lower Credit"
+  | "Pass"
+  | "Fail"
+
+/** Maximum achievable GPA/CGPA on the NBTE 4.0 scale */
+export const MAX_GPA = 4.0
+
+/**
+ * NBTE diploma classification bands (CGPA / GPA):
+ * - Distinction:     3.50 – 4.00
+ * - Upper Credit:    3.00 – 3.49
+ * - Lower Credit:    2.50 – 2.99
+ * - Pass:            2.00 – 2.49
+ * - Fail:            0.00 – 1.99
+ */
+export const CGPA_CLASSIFICATION_BANDS: ReadonlyArray<{
+  classification: DiplomaClassification
+  min: number
+  max: number
+}> = [
+  { classification: "Distinction", min: 3.5, max: 4.0 },
+  { classification: "Upper Credit", min: 3.0, max: 3.49 },
+  { classification: "Lower Credit", min: 2.5, max: 2.99 },
+  { classification: "Pass", min: 2.0, max: 2.49 },
+  { classification: "Fail", min: 0, max: 1.99 },
+]
+
+/** NBTE 4.0 score-to-grade conversion for ND/HND programmes */
 export function scoreToGrade(totalScore: number): GradeInfo {
   if (totalScore >= 75) return { grade: "A", gradePoint: 4.0 }
   if (totalScore >= 70) return { grade: "AB", gradePoint: 3.5 }
@@ -16,12 +46,23 @@ export function scoreToGrade(totalScore: number): GradeInfo {
   return { grade: "F", gradePoint: 0.0 }
 }
 
-export function classifyCgpa(cgpa: number): string {
-  if (cgpa >= 3.5) return "Distinction"
-  if (cgpa >= 3.0) return "Upper Credit"
-  if (cgpa >= 2.5) return "Lower Credit"
-  if (cgpa >= 2.0) return "Pass"
+export function clampGpa(value: number): number {
+  return Number(Math.min(MAX_GPA, Math.max(0, value)).toFixed(2))
+}
+
+export function classifyCgpa(cgpa: number): DiplomaClassification {
+  const gpa = clampGpa(cgpa)
+
+  if (gpa >= 3.5) return "Distinction"
+  if (gpa >= 3.0) return "Upper Credit"
+  if (gpa >= 2.5) return "Lower Credit"
+  if (gpa >= 2.0) return "Pass"
   return "Fail"
+}
+
+/** Semester GPA uses the same classification bands as CGPA */
+export function academicStandingFromGpa(gpa: number): DiplomaClassification {
+  return classifyCgpa(gpa)
 }
 
 export type CourseInput = {
@@ -64,12 +105,19 @@ export function computeGpa(courses: ComputedCourseResult[]): {
   const totalQualityPoints = courses.reduce((sum, c) => sum + c.qualityPoints, 0)
   const gpa =
     totalCreditUnits > 0
-      ? Number((totalQualityPoints / totalCreditUnits).toFixed(2))
+      ? clampGpa(totalQualityPoints / totalCreditUnits)
       : 0
 
   return { gpa, totalCreditUnits, totalQualityPoints }
 }
 
+export function computeCgpaFromSemesterGpas(semesterGpas: number[]): number | null {
+  if (semesterGpas.length === 0) return null
+  const total = semesterGpas.reduce((sum, gpa) => sum + gpa, 0)
+  return clampGpa(total / semesterGpas.length)
+}
+
+/** @deprecated Use computeCgpaFromSemesterGpas for session-level cumulative GPA */
 export function computeCgpa(
   previousQualityPoints: number,
   previousCreditUnits: number,
@@ -79,14 +127,6 @@ export function computeCgpa(
   const totalCredits = previousCreditUnits + semesterCreditUnits
   if (totalCredits === 0) return null
 
-  const totalQuality =
-    previousQualityPoints + semesterQualityPoints
-  return Number((totalQuality / totalCredits).toFixed(2))
-}
-
-export function academicStandingFromGpa(gpa: number): string {
-  if (gpa >= 3.5) return "Excellent Standing"
-  if (gpa >= 3.0) return "Good Standing"
-  if (gpa >= 2.0) return "Satisfactory Standing"
-  return "Probation"
+  const totalQuality = previousQualityPoints + semesterQualityPoints
+  return clampGpa(totalQuality / totalCredits)
 }

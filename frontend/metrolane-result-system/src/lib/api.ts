@@ -2,7 +2,7 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 import { classifyApiError, getErrorMessage } from "@/lib/apiErrors";
 
-const DEFAULT_API_BASE_URL = "https://metrolane-ljdn.onrender.com/api";
+const DEFAULT_API_BASE_URL = "https://http://localhost:5000/api";
 const API_BASE_URL = (
   import.meta.env.VITE_API_URL ?? DEFAULT_API_BASE_URL
 ).replace(/\/$/, "");

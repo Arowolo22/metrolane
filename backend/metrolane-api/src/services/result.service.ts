@@ -1,9 +1,9 @@
 import {
   findActiveResultByMatricSessionSemester,
   findResultById,
+  findSessionSemesterResults,
   insertResult,
   listResults,
-  sumPreviousTotals,
   updateResultPdfUrl,
   updateResultRow,
   updateResultStatusRow,
@@ -12,9 +12,8 @@ import {
 } from "../models/Result.js"
 import { AppError } from "../middleware/errorHandler.js"
 import {
-  academicStandingFromGpa,
   classifyCgpa,
-  computeCgpa,
+  computeCgpaFromSemesterGpas,
   computeCourseResults,
   computeGpa,
   type CourseInput,
@@ -56,13 +55,69 @@ function normalizeCourse(course: CreateResultInput["courses"][number]): CourseIn
   }
 }
 
-function buildAcademicRemarks(gpa: number, cgpa: number | null): string {
-  const standing = academicStandingFromGpa(gpa)
-  if (cgpa === null) {
-    return `${standing}. First semester result on record.`
+function buildAcademicRemarks(
+  semesterGpa: number,
+  firstSemesterGpa: number | null,
+  cumulativeGpa: number | null,
+  semester: string,
+): string {
+  const currentClassification = classifyCgpa(semesterGpa)
+  const isSecondSemester = semester.toLowerCase().includes("second")
+
+  if (!isSecondSemester || firstSemesterGpa === null) {
+    return `${currentClassification}. ${semester} result on record.`
   }
-  const classification = classifyCgpa(cgpa)
-  return `${standing}. Cumulative classification: ${classification}.`
+
+  const cumulativeClassification =
+    cumulativeGpa !== null ? classifyCgpa(cumulativeGpa) : currentClassification
+
+  return (
+    `${semester}: ${currentClassification} (GPA ${semesterGpa.toFixed(2)}). ` +
+    `First Semester GPA: ${firstSemesterGpa.toFixed(2)}. ` +
+    `Cumulative GPA: ${cumulativeGpa?.toFixed(2) ?? "N/A"} (${cumulativeClassification}).`
+  )
+}
+
+async function buildSessionSummary(
+  matricNumber: string,
+  academicSession: string,
+  level: string,
+  semester: string,
+  semesterGpa: number,
+  excludeResultId?: string,
+) {
+  const previousResults = await findSessionSemesterResults(
+    matricNumber,
+    academicSession,
+    level,
+    excludeResultId,
+  )
+
+  const firstSemesterRecord = previousResults.find((result) =>
+    result.semester.toLowerCase().includes("first"),
+  )
+  const firstSemesterGpa = firstSemesterRecord?.semesterGpa ?? null
+
+  const semesterGpas = [
+    ...previousResults.map((result) => result.semesterGpa),
+    semesterGpa,
+  ]
+
+  const cumulativeGpa = computeCgpaFromSemesterGpas(semesterGpas)
+  const degreeClassification = classifyCgpa(cumulativeGpa ?? semesterGpa)
+
+  return {
+    firstSemesterGpa,
+    cumulativeGpa,
+    degreeClassification,
+    academicStanding: classifyCgpa(semesterGpa),
+    academicRemarks: buildAcademicRemarks(
+      semesterGpa,
+      firstSemesterGpa,
+      cumulativeGpa,
+      semester,
+    ),
+  }
 }
 
 function buildResultFields(input: CreateResultInput) {
@@ -111,18 +166,13 @@ export async function createResult(
 
   await assertNoDuplicate(matricNumber, input.student.academicSession, input.student.semester)
 
-  const { previousQualityPoints, previousCreditUnits } =
-    await sumPreviousTotals(matricNumber)
-
-  const cumulativeGpa = computeCgpa(
-    previousQualityPoints,
-    previousCreditUnits,
-    totalQualityPoints,
-    totalCreditUnits,
+  const sessionSummary = await buildSessionSummary(
+    matricNumber,
+    input.student.academicSession,
+    input.student.level,
+    input.student.semester,
+    gpa,
   )
-
-  const degreeClassification =
-    cumulativeGpa !== null ? classifyCgpa(cumulativeGpa) : classifyCgpa(gpa)
 
   const result = await insertResult({
     student: {
@@ -137,10 +187,11 @@ export async function createResult(
       totalCreditUnits,
       totalQualityPoints,
       semesterGpa: gpa,
-      cumulativeGpa,
-      academicStanding: academicStandingFromGpa(gpa),
-      degreeClassification,
-      academicRemarks: buildAcademicRemarks(gpa, cumulativeGpa),
+      firstSemesterGpa: sessionSummary.firstSemesterGpa,
+      cumulativeGpa: sessionSummary.cumulativeGpa,
+      academicStanding: sessionSummary.academicStanding,
+      degreeClassification: sessionSummary.degreeClassification,
+      academicRemarks: sessionSummary.academicRemarks,
     },
     status: "Generated",
     filename: input.filename,
@@ -170,18 +221,14 @@ export async function updateResult(
     id,
   )
 
-  const { previousQualityPoints, previousCreditUnits } =
-    await sumPreviousTotals(matricNumber, id)
-
-  const cumulativeGpa = computeCgpa(
-    previousQualityPoints,
-    previousCreditUnits,
-    totalQualityPoints,
-    totalCreditUnits,
+  const sessionSummary = await buildSessionSummary(
+    matricNumber,
+    input.student.academicSession,
+    input.student.level,
+    input.student.semester,
+    gpa,
+    id,
   )
-
-  const degreeClassification =
-    cumulativeGpa !== null ? classifyCgpa(cumulativeGpa) : classifyCgpa(gpa)
 
   const result = await updateResultRow(id, {
     student: {
@@ -196,10 +243,11 @@ export async function updateResult(
       totalCreditUnits,
       totalQualityPoints,
       semesterGpa: gpa,
-      cumulativeGpa,
-      academicStanding: academicStandingFromGpa(gpa),
-      degreeClassification,
-      academicRemarks: buildAcademicRemarks(gpa, cumulativeGpa),
+      firstSemesterGpa: sessionSummary.firstSemesterGpa,
+      cumulativeGpa: sessionSummary.cumulativeGpa,
+      academicStanding: sessionSummary.academicStanding,
+      degreeClassification: sessionSummary.degreeClassification,
+      academicRemarks: sessionSummary.academicRemarks,
     },
     status: "Generated",
     filename: input.filename,
