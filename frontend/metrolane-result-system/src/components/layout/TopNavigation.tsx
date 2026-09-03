@@ -75,12 +75,12 @@ export function TopNavigation({ title, onMenuClick }: TopNavigationProps) {
   return (
     <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick} aria-label="Open navigation menu">
             <Menu className="h-5 w-5" aria-hidden="true" />
           </Button>
           <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
-            <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">{title}</h1>
+            <h1 className="truncate text-xl font-semibold text-gray-900 sm:text-2xl">{title}</h1>
           </motion.div>
         </div>
 
@@ -108,7 +108,6 @@ export function TopNavigation({ title, onMenuClick }: TopNavigationProps) {
                 }
               }}
               placeholder="Search student by name or matric number..."
-              role="combobox"
               role="combobox"
               aria-label="Search students"
               aria-expanded={isOpen}

@@ -16,9 +16,11 @@ export function StudentInformationCard() {
           <CardTitle>Student Information</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-6 lg:flex-row">
+          <div className="flex min-w-0 flex-col gap-6 lg:flex-row">
             <StudentPhotoUpload />
-            <StudentInformationForm />
+            <div className="min-w-0 flex-1">
+              <StudentInformationForm />
+            </div>
           </div>
         </CardContent>
       </Card>

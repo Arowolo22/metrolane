@@ -33,6 +33,7 @@ import { useStudentRecordQuery, studentRecordQueryKey } from "@/features/student
 import { updateResultStatus } from "@/features/student-records/services/studentRecordsService"
 import type { ResultDetail, ResultStatus } from "@/features/student-records/types"
 import { classifyNbte } from "@/features/result-sheet/utils/resultHelpers"
+import { classifyApiError, ResilienceError } from "@/lib/apiErrors"
 import { notifyError, notifySuccess } from "@/lib/notifications"
 import { queryClient } from "@/lib/queryClient"
 
@@ -120,7 +121,7 @@ export function StudentRecordDetailPage() {
   const generatedAt = new Date(record.generatedAt)
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Button variant="outline" onClick={() => navigate("/student-records")}>
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -157,7 +158,7 @@ export function StudentRecordDetailPage() {
         />
       ) : null}
 
-      <article className="mx-auto w-full max-w-[210mm] space-y-6 bg-white p-4 shadow-lg sm:p-8 print:shadow-none">
+      <article className="mx-auto min-w-0 w-full max-w-[210mm] space-y-6 bg-white p-4 shadow-lg sm:p-8 print:shadow-none">
         <InstitutionHeader photoUrl={record.student.photoUrl} />
         <StudentInformationCard student={record.student} generatedAt={generatedAt} />
 
