@@ -13,7 +13,7 @@ const envSchema = z.object({
   REDIS_URL: z.string().optional(),
   FRONTEND_URL: z
     .string()
-    .default("http://localhost:5173,https://metrolane.vercel.app"),
+    .default("http://localhost:5173,https://metrolane.vercel.app,https://www.metrolane.com.ng,https://metrolane.com.ng"),
   PASSWORD_RESET_EXPIRES_MINUTES: z.coerce.number().default(60),
 });
 

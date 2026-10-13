@@ -62,7 +62,7 @@ export async function registerUser(input: {
 
   if (!hasMetrolanePepper(input.password)) {
     throw new AppError(
-      'Administrator passwords must include "metrolane" plus at least one additional letter',
+      'Administrator passwords Required',
       400,
     )
   }

@@ -13,6 +13,8 @@ import { ok } from "./utils/apiResponse.js";
 const DEFAULT_ALLOWED_ORIGINS = [
   "http://localhost:5173",
   "https://metrolane.vercel.app",
+  "https://www.metrolane.com.ng",
+  "https://metrolane.com.ng",
 ] as const;
 
 function normalizeOrigin(origin: string): string {
